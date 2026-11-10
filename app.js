@@ -109,12 +109,21 @@
   const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const canFullscreen = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen);
 
+  // Fallback when the browser can't / won't do real full screen: explain the iPhone fix, or just hide the buttons.
+  const sheet = $('sheet'), exitZone = $('exitZone');
+  function setImmersive(on) {
+    document.body.classList.toggle('immersive', on);
+    exitZone.hidden = !on;
+    if (on) toast('Tap the top-right corner to bring the buttons back');
+  }
+  $('sheetOk').addEventListener('click', () => { sheet.hidden = true; });
+  $('sheetHide').addEventListener('click', () => { sheet.hidden = true; setImmersive(true); });
+  exitZone.addEventListener('click', () => setImmersive(false));
+
   function toggleFullscreen() {
-    if (!canFullscreen) {
-      toast('iPhone: Share → Add to Home Screen, then open it from the home screen for full screen');
-      return;
-    }
-    const refused = () => toast('Your browser blocked full screen here. Installing the app to the home screen gives full screen.');
+    if (document.body.classList.contains('immersive')) { setImmersive(false); return; }
+    if (!canFullscreen && !fsElement()) { sheet.hidden = false; return; }
+    const refused = () => { sheet.hidden = false; };
     try {
       // both calls return a Promise in modern browsers (the old webkit one returns undefined)
       const p = fsElement()

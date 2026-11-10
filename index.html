@@ -84,6 +84,22 @@
 
 <div id="toast"></div>
 
+<!-- Shown when the browser can't do real full screen (iPhone Safari) -->
+<div id="sheet" hidden>
+  <div class="card">
+    <h2>Full screen on iPhone</h2>
+    <p class="sheetText">Safari can't make a web page full screen. Do this once instead:</p>
+    <ol>
+      <li>Tap <b>Share</b> in Safari (the square with an arrow)</li>
+      <li>Choose <b>Add to Home Screen</b></li>
+      <li>Open <b>Now Playing</b> from the new icon on your home screen: it runs without Safari's bars</li>
+    </ol>
+    <button id="sheetHide" class="pill">Just hide the buttons for now</button>
+    <button id="sheetOk" class="link">Close</button>
+  </div>
+</div>
+<div id="exitZone" hidden></div>
+
 <script src="app.js"></script>
 </body>
 </html>

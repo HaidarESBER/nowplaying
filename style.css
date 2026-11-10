@@ -223,3 +223,16 @@ body.lyrics #lyrics { display: block; }
 
 /* The installed home-screen app is already full screen, so the button is only for the browser. */
 body.standalone #btnFull { display: none; }
+
+/* Hide-the-buttons mode (fallback when real full screen isn't possible). Tap the top-right corner to bring them back. */
+body.immersive #topbar { opacity: 0; pointer-events: none; }
+#exitZone { position: fixed; top: 0; right: 0; width: 96px; height: 72px; z-index: 6; }
+
+/* "Full screen on iPhone" sheet */
+#sheet {
+  position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+  padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l); background: rgba(0,0,0,.62);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); overflow-y: auto;
+}
+#sheet .sheetText { margin: 0 0 10px; font-size: 14px; color: rgba(255,255,255,.85); }
+#sheet .link { display: block; margin: 12px auto 0; font-size: 14px; }
