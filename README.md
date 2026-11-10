@@ -5,6 +5,13 @@
 **An always-on Spotify "now playing" screen for an old phone or tablet.**
 Big cover art, live scrolling lyrics, transport controls. It stays awake, and it's a static web page: no server, no libraries, no tracking.
 
+<p>
+<a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+<a href="https://haidaresber.github.io/nowplaying/?demo"><img alt="Live demo" src="https://img.shields.io/badge/demo-live-1db954.svg"></a>
+<img alt="PWA" src="https://img.shields.io/badge/PWA-installable-5a0fc8.svg">
+<img alt="No dependencies" src="https://img.shields.io/badge/dependencies-none-lightgrey.svg">
+</p>
+
 <img src="docs/demo.gif" alt="Demo: synced lyrics scrolling in landscape, English then Arabic" width="720">
 
 [**Live demo (no Spotify needed)**](https://haidaresber.github.io/nowplaying/?demo) · [Set it up](#set-it-up-10-minutes-free) · [How it works](#how-it-works)
@@ -86,6 +93,8 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 | No lyrics for a song | LRCLIB doesn't have every track. The cover layout is used instead. |
 
 ## How it works
+
+<p align="center"><img src="docs/architecture.svg" alt="Architecture diagram: GitHub Pages serves static files to the browser, which talks to Spotify and LRCLIB" width="860"></p>
 
 Plain HTML, CSS and JS in three files (`index.html`, `style.css`, `app.js`), no build step.
 
