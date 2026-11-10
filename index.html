@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Now Playing">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Now Playing</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="bgA" class="bg"></div>
+<div id="bgB" class="bg"></div>
+<div id="scrim"></div>
+
+<header id="topbar">
+  <span id="clock"></span>
+  <button id="btnLyrics" class="ib small" aria-label="Show or hide lyrics" hidden>
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
+  </button>
+</header>
+
+<main>
+  <!-- Player: cover / meta / lyrics / controls are laid out with CSS grid areas -->
+  <section id="player" hidden>
+    <div id="coverWrap"><img id="cover" alt=""></div>
+
+    <div id="meta">
+      <div id="label">NOW PLAYING</div>
+      <h1 id="title"></h1>
+      <p id="artist"></p>
+    </div>
+
+    <div id="lyrics"><div id="lyricsInner"></div></div>
+
+    <div id="controls">
+      <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+      <div id="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+      <div id="btns">
+        <button id="prev" class="ib" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg></button>
+        <button id="play" class="ib" aria-label="Play or pause"><svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg id="icoPause" viewBox="0 0 24 24" hidden><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+        <button id="next" class="ib" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Idle: big clock when nothing is playing -->
+  <section id="idle" hidden>
+    <div id="idleClock"></div>
+    <div id="idleDate"></div>
+    <p id="idleMsg">Open Spotify and press play</p>
+    <button id="disconnect" class="link">Disconnect Spotify</button>
+  </section>
+
+  <!-- Setup / login -->
+  <section id="setup" hidden>
+    <div class="card">
+      <h2>Connect Spotify</h2>
+      <ol>
+        <li>Open <b>developer.spotify.com/dashboard</b> → <b>Create app</b>. Tick <b>Web API</b>.</li>
+        <li>Add this as a <b>Redirect URI</b> (copy it exactly):
+          <div id="redirectUri" class="code"></div>
+        </li>
+        <li>Paste the app's <b>Client ID</b> here:</li>
+      </ol>
+      <input id="cid" type="text" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Client ID">
+      <button id="connect" class="pill">Connect</button>
+      <p id="setupMsg"></p>
+      <p class="hint">Controlling playback needs Spotify Premium. Tip: do this inside the installed home-screen app, not in Safari.</p>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+<div id="dimmer"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
