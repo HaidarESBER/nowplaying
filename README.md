@@ -16,12 +16,12 @@ Works on iPhone and Android (add it to the home screen). No server, no libraries
 
 ## What it does / doesn't do
 
-- Keeps the screen awake (Screen Wake Lock, iOS 16.4+) and, after 20 s without a touch, puts a black veil over it
-  (saves power on OLED iPhones; the first tap only wakes it).
+- Keeps the screen awake (Screen Wake Lock, iOS 16.4+). It never dims or changes your screen brightness.
+- Full screen: the button in the top-right corner (Android, desktop, iPad). On iPhone, install it
+  (Share -> Add to Home Screen) and open it from the home screen: that is already full screen.
 - Lyrics: LRCLIB (https://lrclib.net), one request per song. Tap the lyrics button (top right) to hide / show them.
 - Network: one Spotify request every ~3.5 s while playing (8 s paused, none in the background).
-- Not possible in a web app: the audio equalizer graph (browsers can't tap another app's audio) and real
-  screen-brightness control.
+- Not possible in a web app: the audio equalizer graph (browsers can't tap another app's audio).
 
 ## Try it without Spotify
 

@@ -12,11 +12,11 @@
   const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
   const REDIRECT = location.origin + location.pathname.replace(/index\.html$/, '');
   const DEMO = new URLSearchParams(location.search).has('demo');
-  const DIM_AFTER_MS = 20000;
 
   const $ = (id) => document.getElementById(id);
   const el = {
     bgA: $('bgA'), bgB: $('bgB'), clock: $('clock'), btnLyrics: $('btnLyrics'),
+    btnFull: $('btnFull'), icoFull: $('icoFull'), icoFullExit: $('icoFullExit'),
     player: $('player'), idle: $('idle'), setup: $('setup'),
     cover: $('cover'), title: $('title'), artist: $('artist'),
     lyrics: $('lyrics'), lyricsInner: $('lyricsInner'),
@@ -90,20 +90,46 @@
     } catch (e) { /* not allowed right now */ }
   }
 
-  let dimT;
-  function resetDim() {
-    document.body.classList.remove('dim');
-    clearTimeout(dimT);
-    dimT = setTimeout(() => document.body.classList.add('dim'), DIM_AFTER_MS);
-  }
-  // First touch while dimmed only wakes the screen (the veil sits on top and swallows it).
+  // (Re)request the wake lock on any touch: browsers release it when the page goes to the background.
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
-    window.addEventListener(ev, () => { lockScreen(); resetDim(); }, { passive: true, capture: true }));
+    window.addEventListener(ev, lockScreen, { passive: true, capture: true }));
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { clearTimeout(S.pollT); }
-    else { lockScreen(); resetDim(); if (!DEMO && S.token) poll(); }
+    else { lockScreen(); if (!DEMO && S.token) poll(); }
   });
+
+  // ------------------------------------------------------------------ full screen
+  // Android / desktop / iPad: Fullscreen API. iPhone Safari has none for web pages: the way to get full screen
+  // there is to install the app (Share -> Add to Home Screen) and open it from the home screen.
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  if (standalone) document.body.classList.add('standalone');
+
+  const rootEl = document.documentElement;
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const canFullscreen = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen);
+
+  function toggleFullscreen() {
+    if (!canFullscreen) {
+      toast('iPhone: Share → Add to Home Screen, then open it from the home screen for full screen');
+      return;
+    }
+    const refused = () => toast('Your browser blocked full screen here. Installing the app to the home screen gives full screen.');
+    try {
+      // both calls return a Promise in modern browsers (the old webkit one returns undefined)
+      const p = fsElement()
+        ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+        : (rootEl.requestFullscreen || rootEl.webkitRequestFullscreen).call(rootEl, { navigationUI: 'hide' });
+      if (p && typeof p.catch === 'function') p.catch(refused);
+    } catch (e) { refused(e); }
+  }
+  el.btnFull.addEventListener('click', toggleFullscreen);
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => {
+    const on = !!fsElement();
+    el.icoFull.toggleAttribute('hidden', on);
+    el.icoFullExit.toggleAttribute('hidden', !on);
+    lockScreen();
+  }));
 
   // ------------------------------------------------------------------ Spotify auth (PKCE)
   const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
@@ -504,7 +530,6 @@
   async function boot() {
     el.redirectUri.textContent = REDIRECT;
     tickClock();
-    resetDim();
     lockScreen();
 
     if (DEMO) {

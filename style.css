@@ -213,7 +213,7 @@ body.lyrics #lyrics { display: block; }
 #setupMsg { min-height: 1.2em; margin: 10px 0 0; font-size: 13px; color: #ff9d9d; }
 .hint { margin: 6px 0 0; font-size: 12px; color: rgba(255,255,255,.5); }
 
-/* ---------- toast + dimmer ---------- */
+/* ---------- toast ---------- */
 #toast {
   position: fixed; left: 50%; bottom: max(env(safe-area-inset-bottom), 24px); transform: translate(-50%, 20px);
   background: rgba(0,0,0,.78); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px;
@@ -221,6 +221,5 @@ body.lyrics #lyrics { display: block; }
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-/* Night-dim: a black veil (saves power on OLED iPhones; the first tap only wakes it). */
-#dimmer { position: fixed; inset: 0; z-index: 10; background: #000; opacity: 0; pointer-events: none; transition: opacity 1.2s ease; }
-body.dim #dimmer { opacity: .72; pointer-events: auto; }
+/* The installed home-screen app is already full screen, so the button is only for the browser. */
+body.standalone #btnFull { display: none; }
