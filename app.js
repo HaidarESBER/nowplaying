@@ -545,8 +545,13 @@
       const at = new URLSearchParams(location.search).get('demo');
       if (at === 'idle') { show('idle'); return; }
       if (at === 'setup') { showSetup(''); return; }
-      demoLoad(0);
-      if (at === 'seek') { S.anchor = { p: 30000, t: Date.now() }; }
+      // optional knobs for screenshots: &n=track index, &t=start second, &ly=0 hides lyrics
+      const q = new URLSearchParams(location.search);
+      demoIdx = parseInt(q.get('n') || '0', 10) || 0;
+      if (q.get('ly') === '0') S.showLyrics = false;
+      demoLoad(demoIdx);
+      const t0 = parseFloat(q.get('t') || (at === 'seek' ? '30' : '0'));
+      if (t0 > 0) S.anchor = { p: t0 * 1000, t: Date.now() };
       return;
     }
 
