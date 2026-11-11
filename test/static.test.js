@@ -1,0 +1,48 @@
+'use strict';
+// Static sanity checks. app.js is a browser-only IIFE, so it is checked
+// without being executed or refactored.
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const root = path.join(__dirname, '..');
+const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+
+test('app.js has valid syntax (node --check)', () => {
+  const r = spawnSync(process.execPath, ['--check', path.join(root, 'app.js')], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, r.stderr);
+});
+
+test('app.js is strict-mode and has no stray debugger statements', () => {
+  const src = read('app.js');
+  assert.match(src, /'use strict'/);
+  assert.doesNotMatch(src, /^\s*debugger\s*;?\s*$/m);
+});
+
+test('manifest.webmanifest is valid and its icons exist', () => {
+  const m = JSON.parse(read('manifest.webmanifest'));
+  assert.ok(m.name && m.start_url && m.display);
+  assert.ok(Array.isArray(m.icons) && m.icons.length > 0);
+  for (const i of m.icons) {
+    assert.ok(fs.existsSync(path.join(root, i.src)), `missing icon ${i.src}`);
+    assert.match(i.sizes, /^\d+x\d+$/);
+  }
+});
+
+test('index.html references only files that exist', () => {
+  const html = read('index.html');
+  const refs = [...html.matchAll(/\b(?:src|href)="([^"#?]+)"/g)].map((m) => m[1])
+    .filter((u) => !/^(https?:)?\/\//.test(u) && !u.startsWith('data:'));
+  assert.ok(refs.includes('app.js') && refs.includes('style.css'));
+  for (const r of refs) assert.ok(fs.existsSync(path.join(root, r)), `missing ${r}`);
+});
+
+test('every element id read via $("...") in app.js exists in index.html', () => {
+  const html = read('index.html');
+  const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+  const used = [...read('app.js').matchAll(/\$\('([A-Za-z0-9_-]+)'\)/g)].map((m) => m[1]);
+  const missing = [...new Set(used)].filter((i) => !ids.has(i));
+  assert.deepStrictEqual(missing, []);
+});
