@@ -19,7 +19,7 @@
     btnFull: $('btnFull'), icoFull: $('icoFull'), icoFullExit: $('icoFullExit'),
     player: $('player'), idle: $('idle'), setup: $('setup'),
     cover: $('cover'), title: $('title'), artist: $('artist'),
-    lyrics: $('lyrics'), lyricsInner: $('lyricsInner'),
+    lyrics: $('lyrics'), lyricsInner: $('lyricsInner'), coverWrap: $('coverWrap'), meta: $('meta'),
     seek: $('seek'), tCur: $('tCur'), tDur: $('tDur'),
     prev: $('prev'), play: $('play'), next: $('next'), icoPlay: $('icoPlay'), icoPause: $('icoPause'),
     idleClock: $('idleClock'), idleDate: $('idleDate'), idleMsg: $('idleMsg'), disconnect: $('disconnect'),
@@ -257,25 +257,41 @@
   }
 
   // ------------------------------------------------------------------ rendering
+  const SWAP_MS = 220;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const preload = (url) => new Promise((res) => {
+    if (!url) return res();
+    const im = new Image();
+    im.onload = im.onerror = () => res();
+    im.src = url;
+    setTimeout(res, 1500);                       // never wait forever on a slow image
+  });
+
   function newTrack(t) {
+    const first = !S.track;
     S.trackId = t.id;
     S.track = t;
-    el.title.textContent = t.title;
-    el.artist.textContent = t.album && t.album !== t.title ? t.artist + '  ·  ' + t.album : t.artist;
     el.tDur.textContent = fmt(t.dur);
     el.seek.max = Math.max(1, Math.floor(t.dur / 1000));
 
-    // cover + wash, cross-faded
-    el.cover.classList.add('fade');
-    const done = () => el.cover.classList.remove('fade');
-    el.cover.onload = done; el.cover.onerror = done;
-    el.cover.src = t.art || '';
-    setWash(t.art);
-
-    // lyrics reset
+    // lyrics: keep the current layout, fade the old text out while the new ones load
     S.lines = null; S.lineIdx = -3;
-    renderLyrics();
-    loadLyrics(t);
+    el.lyrics.classList.add('loading');
+    if (!DEMO) loadLyrics(t);
+
+    const apply = () => {
+      if (S.trackId !== t.id) return;            // skipped again meanwhile
+      el.title.textContent = t.title;
+      el.artist.textContent = t.album && t.album !== t.title ? t.artist + '  ·  ' + t.album : t.artist;
+      el.cover.src = t.art || '';
+      setWash(t.art);
+      el.coverWrap.classList.remove('swap'); el.meta.classList.remove('swap');
+    };
+    if (first) { apply(); } else {
+      el.coverWrap.classList.add('swap'); el.meta.classList.add('swap');
+      Promise.all([preload(t.art), sleep(SWAP_MS)]).then(apply);
+    }
+
     if ('mediaSession' in navigator) {
       try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: t.album, artwork: t.art ? [{ src: t.art }] : [] }); } catch (e) { /* ignore */ }
     }
@@ -358,8 +374,11 @@
         const list = await get('https://lrclib.net/api/search?' + q);
         for (const it of (list || [])) { const l = parseLrc(it.syncedLyrics); if (l.length) { lines = l; break; } }
       }
-      if (S.trackId === t.id && lines && lines.length) setLyrics(lines);
-    } catch (e) { /* offline / aborted: simply no lyrics */ }
+      if (S.trackId !== t.id) return;
+      if (lines && lines.length) setLyrics(lines); else clearLyrics();
+    } catch (e) {
+      if (S.trackId === t.id && !ac.signal.aborted) clearLyrics();   // offline: simply no lyrics
+    }
   }
 
   function setLyrics(lines) {
@@ -367,26 +386,44 @@
     renderLyrics();
     updateLyricLine(position());
   }
+  function clearLyrics() {
+    S.lines = null; S.lineIdx = -3;
+    renderLyrics();
+  }
 
   function renderLyrics() {
-    const has = !!(S.lines && S.lines.length);
-    el.lyricsInner.textContent = '';
-    if (has) {
-      const frag = document.createDocumentFragment();
-      S.lines.forEach((l) => {
-        const p = document.createElement('p');
-        p.className = 'ln' + (isRTL(l.s) ? ' rtl' : '');
-        p.textContent = l.s || '♪';
-        p.dir = 'auto';
-        frag.appendChild(p);
+    const wantNow = !!(S.lines && S.lines.length) && S.showLyrics;
+    const fill = () => {
+      const has = !!(S.lines && S.lines.length);      // read the latest state when the fade ends
+      const want = has && S.showLyrics;
+      el.lyricsInner.textContent = '';
+      if (has) {
+        const frag = document.createDocumentFragment();
+        S.lines.forEach((l) => {
+          const p = document.createElement('p');
+          p.className = 'ln' + (isRTL(l.s) ? ' rtl' : '');
+          p.textContent = l.s || '♪';
+          p.dir = 'auto';
+          frag.appendChild(p);
+        });
+        el.lyricsInner.appendChild(frag);
+      }
+      el.btnLyrics.hidden = !has;
+      document.body.classList.toggle('lyrics', want);
+      el.lyricsInner.style.transition = 'none';
+      el.lyricsInner.style.transform = 'translateY(0)';
+      requestAnimationFrame(() => {
+        el.lyricsInner.style.transition = '';
+        centerLine(S.lineIdx, true);
+        el.lyrics.classList.remove('loading');   // fade the new lyrics in
+        el.player.classList.remove('relayout');
       });
-      el.lyricsInner.appendChild(frag);
-    }
-    el.btnLyrics.hidden = !has;
-    document.body.classList.toggle('lyrics', has && S.showLyrics);
-    el.lyricsInner.style.transition = 'none';
-    el.lyricsInner.style.transform = 'translateY(0)';
-    requestAnimationFrame(() => { el.lyricsInner.style.transition = ''; centerLine(S.lineIdx, true); });
+    };
+    // switching between the lyrics layout and the plain layout is a jump: hide it behind a short fade
+    if (wantNow !== document.body.classList.contains('lyrics') && S.screen === 'player') {
+      el.player.classList.add('relayout');
+      setTimeout(fill, 160);
+    } else fill();
   }
 
   function updateLyricLine(p) {

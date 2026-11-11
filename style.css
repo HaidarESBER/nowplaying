@@ -70,6 +70,11 @@ main { position: fixed; inset: 0; }
   padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
 }
 #coverWrap { grid-area: cover; width: var(--cover); height: var(--cover); }
+/* smooth song changes: old content fades out, new content fades in together */
+#coverWrap, #meta { transition: opacity .22s ease; }
+#coverWrap.swap, #meta.swap { opacity: 0; }
+#player { transition: opacity .16s ease; }
+#player.relayout { opacity: 0; }
 #cover {
   width: 100%; height: 100%; object-fit: cover; display: block;
   border-radius: 24px; background: #222;
@@ -110,11 +115,12 @@ main { position: fixed; inset: 0; }
 /* ---------- lyrics (scrolling, centred line is the active one) ---------- */
 #lyrics {
   grid-area: lyrics; display: none; position: relative; overflow: hidden; min-width: 0; min-height: 0;
-  align-self: stretch; justify-self: stretch;
+  align-self: stretch; justify-self: stretch; transition: opacity .35s ease;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 80%, transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 80%, transparent 100%);
 }
 body.lyrics #lyrics { display: block; }
+#lyrics.loading { opacity: 0; transition-duration: .2s; }
 #lyricsInner {
   position: absolute; left: 0; right: 0; top: 0;
   transition: transform .6s cubic-bezier(.22, .8, .3, 1);
