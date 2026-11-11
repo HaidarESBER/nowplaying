@@ -44,6 +44,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Device switcher**: the speaker button in the top bar moves playback to any of your Spotify Connect devices.
 - **Settings**: lyric size (S to XL), show or hide the clock, and keep-screen-awake on or off. Saved in this browser.
 - **Synced lyrics** from [LRCLIB](https://lrclib.net) that scroll with the song, big and readable from across the room. Works with right-to-left languages. One lyrics button hides or shows them.
+- **Scroll the lyrics yourself**: drag or flick them (mouse wheel on desktop) to read ahead or look back. Auto-scroll pauses, and after a few seconds, or when you tap **Now**, they glide back to the current line.
 - **Tap a lyric line to jump there**: Spotify seeks to that line of the song (needs Premium, like the other controls).
 - **Colours from the cover**: the background is a blurred wash of the current album art.
 - **Layouts for both orientations**, with or without lyrics.

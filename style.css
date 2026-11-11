@@ -146,6 +146,14 @@ main { position: fixed; inset: 0; }
           mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 80%, transparent 100%);
 }
 body.lyrics #lyrics { display: block; }
+#lyrics { touch-action: none; }
+/* while you scroll the lyrics yourself, every line is readable and a pill takes you back */
+#lyrics.browsing .ln:not(.act) { opacity: .72; }
+#lyricsNow {
+  position: absolute; left: 50%; bottom: 21%; transform: translateX(-50%); z-index: 2;
+  padding: 8px 18px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+  background: rgba(0,0,0,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
 #lyrics.loading { opacity: 0; transition-duration: .2s; }
 #lyricsInner {
   position: absolute; left: 0; right: 0; top: 0;

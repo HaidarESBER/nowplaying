@@ -19,7 +19,7 @@
     btnFull: $('btnFull'), icoFull: $('icoFull'), icoFullExit: $('icoFullExit'),
     player: $('player'), idle: $('idle'), setup: $('setup'),
     cover: $('cover'), title: $('title'), artist: $('artist'),
-    lyrics: $('lyrics'), lyricsInner: $('lyricsInner'), coverWrap: $('coverWrap'), meta: $('meta'),
+    lyrics: $('lyrics'), lyricsInner: $('lyricsInner'), coverWrap: $('coverWrap'), meta: $('meta'), lyricsNow: $('lyricsNow'),
     seek: $('seek'), tCur: $('tCur'), tDur: $('tDur'),
     prev: $('prev'), play: $('play'), next: $('next'), icoPlay: $('icoPlay'), icoPause: $('icoPause'),
     idleClock: $('idleClock'), idleDate: $('idleDate'), idleMsg: $('idleMsg'), disconnect: $('disconnect'),
@@ -414,6 +414,7 @@
     const fill = () => {
       const has = !!(S.lines && S.lines.length);      // read the latest state when the fade ends
       const want = has && S.showLyrics;
+      leaveBrowse();
       el.lyricsInner.textContent = '';
       if (has) {
         const frag = document.createDocumentFragment();
@@ -473,6 +474,11 @@
     let y = n.offsetTop + n.offsetHeight / 2;
     if (idx < 0) y -= n.offsetHeight * 1.4;                    // first line waits just below centre
     const shift = el.lyrics.clientHeight / 2 - y;
+    B.auto = shift;
+    if (B.on) {
+      if (!instant) { updateNowPill(); return; }             // the user is browsing: don't pull the lyrics away
+      leaveBrowse();                                         // new lyrics / resize: start fresh
+    }
     if (instant) el.lyricsInner.style.transition = 'none';
     el.lyricsInner.style.transform = 'translateY(' + shift + 'px)';
     if (instant) requestAnimationFrame(() => { el.lyricsInner.style.transition = ''; });
@@ -480,6 +486,99 @@
 
   window.addEventListener('resize', () => centerLine(S.lineIdx, true));
   window.addEventListener('orientationchange', () => setTimeout(() => centerLine(S.lineIdx, true), 250));
+
+  // ------------------------------------------------------------------ browse the lyrics yourself (drag / wheel)
+  const B = { on: false, cur: 0, auto: 0, t: 0, raf: 0, suppressClick: false };
+
+  function lyricBounds() {                                    // translateY range that keeps the first / last line reachable
+    const nodes = el.lyricsInner.children;
+    if (!nodes.length) return [0, 0];
+    const mid = el.lyrics.clientHeight / 2, f = nodes[0], l = nodes[nodes.length - 1];
+    return [mid - (l.offsetTop + l.offsetHeight / 2), mid - (f.offsetTop + f.offsetHeight / 2)];
+  }
+  function updateNowPill() { el.lyricsNow.textContent = B.cur > B.auto ? 'Now ↓' : 'Now ↑'; }
+  function setBrowse(v) {
+    const [lo, hi] = lyricBounds();
+    B.cur = Math.max(lo, Math.min(hi, v));
+    el.lyricsInner.style.transition = 'none';
+    el.lyricsInner.style.transform = 'translateY(' + B.cur + 'px)';
+    updateNowPill();
+    return B.cur === lo || B.cur === hi;
+  }
+  function enterBrowse() {
+    if (B.on) return;
+    B.on = true; B.cur = B.auto;
+    el.lyrics.classList.add('browsing');
+    el.lyricsNow.hidden = false;
+    updateNowPill();
+  }
+  function leaveBrowse() {                                     // no animation: used when the lyrics are replaced
+    cancelAnimationFrame(B.raf); clearTimeout(B.t);
+    B.on = false;
+    el.lyrics.classList.remove('browsing');
+    el.lyricsNow.hidden = true;
+  }
+  function exitBrowse() {                                      // glide back to the line that is playing
+    if (!B.on) return;
+    leaveBrowse();
+    el.lyricsInner.style.transition = '';
+    centerLine(S.lineIdx, false);
+  }
+  const armReturn = () => { clearTimeout(B.t); B.t = setTimeout(exitBrowse, 4500); };
+
+  function fling(v) {                                          // keep gliding after a quick swipe
+    let last = performance.now();
+    const step = (now) => {
+      const dt = Math.min(48, now - last); last = now;
+      const atEdge = setBrowse(B.cur + v * dt);
+      v *= Math.pow(0.9, dt / 16);
+      if (Math.abs(v) > 0.02 && !atEdge) B.raf = requestAnimationFrame(step); else armReturn();
+    };
+    B.raf = requestAnimationFrame(step);
+  }
+
+  (() => {
+    let drag = null, lastY = 0, lastT = 0, vel = 0;
+    el.lyrics.addEventListener('pointerdown', (e) => {
+      if (!S.lines || e.target.closest('#lyricsNow')) return;
+      cancelAnimationFrame(B.raf);
+      drag = { id: e.pointerId, y0: e.clientY, base: B.on ? B.cur : B.auto, moved: false };
+      lastY = e.clientY; lastT = e.timeStamp; vel = 0;
+    });
+    el.lyrics.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dy = e.clientY - drag.y0;
+      if (!drag.moved) {
+        if (Math.abs(dy) < 7) return;                         // still a tap
+        drag.moved = true;
+        enterBrowse();
+        try { el.lyrics.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+      }
+      clearTimeout(B.t);
+      setBrowse(drag.base + dy);
+      const dt = e.timeStamp - lastT;
+      if (dt > 0) vel = 0.7 * vel + 0.3 * ((e.clientY - lastY) / dt);
+      lastY = e.clientY; lastT = e.timeStamp;
+    });
+    const end = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const moved = drag.moved; drag = null;
+      if (!moved) return;
+      B.suppressClick = true; setTimeout(() => { B.suppressClick = false; }, 60);   // a drag is not a tap
+      if (Math.abs(vel) > 0.15) fling(vel); else armReturn();
+    };
+    el.lyrics.addEventListener('pointerup', end);
+    el.lyrics.addEventListener('pointercancel', end);
+    el.lyrics.addEventListener('wheel', (e) => {              // mouse wheel / trackpad
+      if (!S.lines) return;
+      e.preventDefault();
+      cancelAnimationFrame(B.raf);
+      enterBrowse();
+      setBrowse(B.cur - e.deltaY);
+      armReturn();
+    }, { passive: false });
+    el.lyricsNow.addEventListener('click', exitBrowse);
+  })();
 
   // ------------------------------------------------------------------ controls
   async function control(kind) {
@@ -528,12 +627,14 @@
 
   // tap a lyric line to jump to it in the song
   el.lyricsInner.addEventListener('click', (e) => {
+    if (B.suppressClick) return;
     const ln = e.target.closest('.ln');
     if (!ln || !S.lines) return;
     const i = Array.prototype.indexOf.call(el.lyricsInner.children, ln);
     if (i < 0 || !S.lines[i]) return;
     ln.classList.add('tapped');
     setTimeout(() => ln.classList.remove('tapped'), 220);
+    exitBrowse();
     seekTo(S.lines[i].t);
   });
 
