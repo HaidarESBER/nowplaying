@@ -9,7 +9,7 @@
 (() => {
   'use strict';
 
-  const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-library-read user-library-modify';
+  const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-library-read user-library-modify playlist-read-private playlist-read-collaborative';
   const REDIRECT = location.origin + location.pathname.replace(/index\.html$/, '');
   const DEMO = new URLSearchParams(location.search).has('demo');
 
@@ -61,6 +61,22 @@
   const fmt = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const isRTL = (s) => /[֐-ࣿיִ-﷿ﹰ-﻿]/.test(s);
 
+  // ---- name + greeting
+  const demoName = DEMO ? (new URLSearchParams(location.search).get('name') || '') : '';
+  const getName = () => demoName || (store.get('name') || '').trim();
+  const hello = () => { const hr = new Date().getHours(); return hr < 5 ? 'Good night' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'; };
+  function renderIdleGreet() { const n = getName(); $('idleGreet').textContent = n ? hello() + ', ' + n : ''; }
+  function showGreeting() {
+    const n = getName(); if (!n) return;
+    const g = $('greet');
+    $('greetHi').textContent = hello() + ',';
+    $('greetName').textContent = n;
+    g.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => g.classList.add('show')));
+    setTimeout(() => g.classList.remove('show'), 2600);
+    setTimeout(() => { g.hidden = true; }, 3300);
+  }
+
   let toastT;
   function toast(msg) {
     el.toast.textContent = msg;
@@ -76,7 +92,10 @@
     el.setup.hidden = screen !== 'setup';
     el.clock.hidden = screen !== 'player';
     if (screen !== 'player') { el.btnLyrics.hidden = true; document.body.classList.remove('lyrics'); }
-    if (screen === 'idle') tickClock();
+    if (screen === 'idle') { tickClock(); renderIdleGreet(); }
+    if (screen === 'player' && window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches && !store.get('hintKeys')) {
+      store.set('hintKeys', '1'); setTimeout(() => toast('Tip: press ? to see the keyboard shortcuts'), 3500);
+    }
     if (screen === 'player') armHide(); else document.body.classList.remove('chrome-off');
   }
 
@@ -707,12 +726,29 @@
     el.redirectUri.textContent = REDIRECT;
     el.cid.value = store.get('cid') || '';
     el.setupMsg.textContent = msg || '';
+    $('nameStep').hidden = true; $('setupCard').hidden = false;
+  }
+  let nameAsked = false, pendingCid = '';
+  function showNameStep() {
+    $('setupCard').hidden = true; $('nameStep').hidden = false;
+    $('nameIn').value = getName();
+    setTimeout(() => $('nameIn').focus(), 50);
   }
   el.connect.addEventListener('click', () => {
     const id = el.cid.value.trim();
-    if (!/^[0-9a-f]{32}$/i.test(id)) { el.setupMsg.textContent = 'That doesn’t look like a Client ID (32 letters/numbers).'; return; }
+    if (!/^[0-9a-f]{32}$/i.test(id)) { el.setupMsg.textContent = 'That doesn\u2019t look like a Client ID (32 letters/numbers).'; return; }
+    pendingCid = id;
+    if (!getName() && !nameAsked) { nameAsked = true; showNameStep(); return; }   // onboarding: ask the name once
     startLogin(id);
   });
+  function finishName(skip) {
+    if (!skip) { const n = $('nameIn').value.trim().slice(0, 24); if (n) store.set('name', n); }
+    if (DEMO) { $('nameStep').hidden = true; $('setupCard').hidden = false; return; }
+    startLogin(pendingCid || store.get('cid') || '');
+  }
+  $('nameGo').addEventListener('click', () => finishName(false));
+  $('nameSkip').addEventListener('click', () => finishName(true));
+  $('nameIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') finishName(false); });
   el.disconnect.addEventListener('click', logout);
 
   // ------------------------------------------------------------------ shuffle / repeat
@@ -736,6 +772,7 @@
   }
   el.shuf.addEventListener('click', async () => {
     S.shuffle = !S.shuffle; holdUI(); renderModes();
+    toast(S.shuffle ? 'Shuffle on' : 'Shuffle off');
     if (DEMO) return;
     await playerCall('PUT', '/me/player/shuffle?state=' + S.shuffle);
     setTimeout(poll, 600);
@@ -863,9 +900,8 @@
       el.devList.appendChild(b);
     });
   }
-  async function openDevices() {
-    el.devList.textContent = 'Loading…';
-    el.devSheet.hidden = false;
+  async function loadDevices() {
+    el.devList.textContent = 'Loading\u2026';
     if (DEMO) { renderDevices(DEMO_DEVICES); return; }
     try {
       const r = await api('GET', '/me/player/devices');
@@ -880,12 +916,181 @@
     if (r && r.ok) toast('Playing on ' + d.name);
     setTimeout(poll, 900);
   }
-  el.btnDev.addEventListener('click', openDevices);
+  el.btnDev.addEventListener('click', () => openLibrary());
   $('devClose').addEventListener('click', () => { el.devSheet.hidden = true; });
+
+  // ------------------------------------------------------------------ library: playlists + devices (one sheet, two tabs)
+  let libTab = 'pl';
+  const hasScopes = (list) => !!(S.token && S.token.scope && list.every((x) => S.token.scope.split(' ').includes(x)));
+  const hasPl = () => hasScopes(['playlist-read-private', 'playlist-read-collaborative']);
+
+  const DEMO_PLAYLISTS = [
+    { id: 'p1', name: 'Late Night Drive', owner: 'You', count: 42, hue: 265, uri: 'demo:1' },
+    { id: 'p2', name: 'Morning Coffee', owner: 'You', count: 28, hue: 28, uri: 'demo:2' },
+    { id: 'p3', name: 'Focus Flow', owner: 'Spotify', count: 120, hue: 175, uri: 'demo:3' },
+    { id: 'p4', name: 'Road Trip Classics', owner: 'You', count: 64, hue: 350, uri: 'demo:4' },
+    { id: 'p5', name: 'Arabic Chill', owner: 'You', count: 36, hue: 205, uri: 'demo:5' },
+  ];
+
+  function syncTabs() {
+    document.querySelectorAll('#libTabs button').forEach((b) => b.classList.toggle('on', b.dataset.v === libTab));
+  }
+  function loadTab() { if (libTab === 'dev') loadDevices(); else loadPlaylists(); }
+  function openLibrary(tab) {
+    if (tab) libTab = tab;
+    el.devSheet.hidden = false;
+    syncTabs(); loadTab();
+  }
+  $('libTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    libTab = b.dataset.v; syncTabs(); loadTab();
+  });
+
+  function note(msg, withReconnect) {
+    el.devList.textContent = '';
+    const p = document.createElement('p'); p.className = 'devNote'; p.textContent = msg;
+    el.devList.appendChild(p);
+    if (withReconnect) {
+      const b = document.createElement('button'); b.className = 'pill'; b.textContent = 'Reconnect Spotify';
+      b.addEventListener('click', () => startLogin(store.get('cid') || ''));
+      el.devList.appendChild(b);
+    }
+  }
+
+  async function loadPlaylists() {
+    el.devList.textContent = 'Loading…';
+    if (DEMO) { renderPlaylists(DEMO_PLAYLISTS); return; }
+    if (!hasPl()) { note('To show your playlists, Spotify needs one more permission. You only do this once.', true); return; }
+    try {
+      let all = [], url = '/me/playlists?limit=50';
+      for (let i = 0; i < 4 && url; i++) {                         // up to 200 playlists
+        const r = await api('GET', url);
+        if (r.status === 403) { note('Spotify refused the request. Reconnect to grant the playlist permission.', true); return; }
+        if (!r.ok) { note('Could not load playlists (' + r.status + ').'); return; }
+        const j = await r.json();
+        all = all.concat((j.items || []).filter(Boolean));
+        url = j.next ? j.next.replace('https://api.spotify.com/v1', '') : null;
+      }
+      renderPlaylists(all);
+    } catch (e) { note('Could not reach Spotify.'); }
+  }
+
+  function renderPlaylists(list) {
+    el.devList.textContent = '';
+    if (!list.length) { note('No playlists yet. Create one in Spotify and it will show up here.'); return; }
+    list.forEach((p) => {
+      const b = document.createElement('button');
+      b.className = 'dev pl';
+      const img = document.createElement('img');
+      img.alt = ''; img.loading = 'lazy';
+      const imgs = p.images || [];
+      img.src = p.hue != null ? demoCover(p.hue) : (imgs.length ? imgs[imgs.length - 1].url : '');
+      const l = document.createElement('div');
+      const n = document.createElement('b'); n.textContent = p.name || 'Untitled';
+      const total = p.count != null ? p.count : ((p.items && p.items.total) != null ? p.items.total : (p.tracks && p.tracks.total));
+      const owner = p.owner && (p.owner.display_name || p.owner) ;
+      const sm = document.createElement('small');
+      sm.textContent = [typeof total === 'number' ? total + ' songs' : '', typeof owner === 'string' ? owner : ''].filter(Boolean).join(' · ');
+      l.append(n, sm);
+      b.append(img, l);
+      b.addEventListener('click', () => playPlaylist(p));
+      el.devList.appendChild(b);
+    });
+  }
+
+  async function playPlaylist(p) {
+    el.devSheet.hidden = true;
+    if (DEMO) { demoControl('next'); toast('Playing ' + p.name); return; }
+    const r = await playerCall('PUT', '/me/player/play', { context_uri: p.uri });
+    if (r && r.ok) { toast('Playing ' + p.name); S.anchor = { p: 0, t: Date.now() }; S.playing = true; renderPlayState(); setTimeout(poll, 900); }
+    else if (r && r.status === 404) { openLibrary('dev'); toast('Pick a device to play on first'); }
+  }
+
+  // ------------------------------------------------------------------ greeting + name
+  // (the helpers themselves are defined near the top; this wires the settings field)
+
+  // ------------------------------------------------------------------ keyboard shortcuts (desktop)
+  const SHORTCUTS = [
+    [['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 5 s'], [['Shift', '← →'], 'Previous / next song'],
+    [['N', 'B'], 'Next / previous song'], [['↑', '↓'], 'Volume up / down'], [['M'], 'Mute'],
+    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'],
+    [['F'], 'Full screen'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
+  ];
+  (() => {
+    const list = $('helpList');
+    SHORTCUTS.forEach(([keys, desc]) => {
+      const k = document.createElement('div'); k.className = 'keys';
+      keys.forEach((x) => { const e = document.createElement('kbd'); e.textContent = x; k.appendChild(e); });
+      const d = document.createElement('div'); d.textContent = desc;
+      list.append(k, d);
+    });
+  })();
+
+  const LYRIC_STYLES = ['scroll', 'karaoke', 'focus', 'duo', 'words'];
+  const LYRIC_NAMES = { scroll: 'Scroll', karaoke: 'Karaoke', focus: 'One line', duo: 'Two lines', words: 'Word by word' };
+  function cycleLyricStyle() {
+    cfg.lstyle = LYRIC_STYLES[(LYRIC_STYLES.indexOf(cfg.lstyle) + 1) % LYRIC_STYLES.length];
+    saveCfg(); applyCfg(); syncSettingsUI();
+    toast('Lyrics: ' + LYRIC_NAMES[cfg.lstyle]);
+  }
+  let preMute = 0;
+  function stepVol(d) {
+    if (volumeBlocked()) return;
+    const v = Math.max(0, Math.min(100, curVol() + d));
+    showVol(v); sendVol(v); holdUI();
+  }
+  function toggleMute() {
+    if (volumeBlocked()) return;
+    const c = curVol();
+    const v = c > 0 ? 0 : (preMute || 30);
+    if (c > 0) preMute = c;
+    showVol(v); sendVol(v); holdUI();
+    toast(v === 0 ? 'Muted' : 'Volume ' + v);
+  }
+  function closePanels() {
+    el.devSheet.hidden = true; el.setSheet.hidden = true; $('helpSheet').hidden = true; sheet.hidden = true;
+  }
+  const anyPanel = () => !el.devSheet.hidden || !el.setSheet.hidden || !$('helpSheet').hidden || !sheet.hidden;
+
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    const typing = t && ((t.tagName === 'INPUT' && !['checkbox', 'range', 'button'].includes(t.type)) || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (typing) { if (e.key === 'Escape') t.blur(); return; }
+    const k = e.key;
+    if (k === 'Escape') { closePanels(); return; }
+    if (k === '?') { $('helpSheet').hidden = !$('helpSheet').hidden; e.preventDefault(); return; }
+    if (S.screen !== 'player' || anyPanel()) return;
+    let handled = true;
+    switch (k) {
+      case ' ': case 'k': case 'K': el.play.click(); break;
+      case 'ArrowLeft': if (e.shiftKey) el.prev.click(); else if (S.track) seekTo(position() - 5000); break;
+      case 'ArrowRight': if (e.shiftKey) el.next.click(); else if (S.track) seekTo(position() + 5000); break;
+      case 'ArrowUp': stepVol(5); break;
+      case 'ArrowDown': stepVol(-5); break;
+      case 'n': case 'N': el.next.click(); break;
+      case 'b': case 'B': el.prev.click(); break;
+      case 'm': case 'M': toggleMute(); break;
+      case 's': case 'S': el.shuf.click(); break;
+      case 'r': case 'R': el.rep.click(); break;
+      case 'l': case 'L': el.like.click(); break;
+      case 't': case 'T': if (!el.btnLyrics.hidden) el.btnLyrics.click(); break;
+      case 'y': case 'Y': cycleLyricStyle(); break;
+      case 'f': case 'F': toggleFullscreen(); break;
+      case 'p': case 'P': openLibrary('pl'); break;
+      case 'd': case 'D': openLibrary('dev'); break;
+      case ',': el.btnSet.click(); break;
+      default: handled = false;
+    }
+    if (handled) e.preventDefault();
+  });
+  // Space on a focused button would press it a second time: stop that, and don't leave buttons focused after a click
+  document.addEventListener('keyup', (e) => { if (e.key === ' ' && e.target && e.target.tagName === 'BUTTON') e.preventDefault(); });
+  document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('button'); if (b && b.blur) b.blur(); });
 
   // ------------------------------------------------------------------ auto-hide the buttons
   let hideT = 0, lastAct = 0, swallow = false;
-  const anySheet = () => !el.devSheet.hidden || !el.setSheet.hidden || !sheet.hidden;
+  const anySheet = () => !el.devSheet.hidden || !el.setSheet.hidden || !sheet.hidden || !$('helpSheet').hidden;
   function armHide() {
     clearTimeout(hideT);
     if (!cfg.autohide || S.screen !== 'player') return;
@@ -922,12 +1127,15 @@
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
-    $('rowLikes').hidden = DEMO || hasLib();
+    $('rowLikes').hidden = DEMO || (hasLib() && hasPl());
+    $('cfgName').value = getName();
   }
   el.btnSet.addEventListener('click', () => { syncSettingsUI(); el.setSheet.hidden = false; });
   $('setClose').addEventListener('click', () => { el.setSheet.hidden = true; });
   $('cfgClock').addEventListener('change', (e) => { cfg.clock = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
+  $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
+  $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
   $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
   $('cfgStyle').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -940,8 +1148,8 @@
   $('cfgReconnect').addEventListener('click', () => startLogin(store.get('cid') || ''));
   $('cfgDisconnect').addEventListener('click', () => { el.setSheet.hidden = true; if (DEMO) return; logout(); });
   // tap outside a card closes it; Escape too
-  [el.devSheet, el.setSheet].forEach((sh) => sh.addEventListener('click', (e) => { if (e.target === sh) sh.hidden = true; }));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { el.devSheet.hidden = true; el.setSheet.hidden = true; } });
+  [el.devSheet, el.setSheet, $('helpSheet')].forEach((sh) => sh.addEventListener('click', (e) => { if (e.target === sh) sh.hidden = true; }));
+  $('helpClose').addEventListener('click', () => { $('helpSheet').hidden = true; });
   applyCfg();
   renderModes();
 
@@ -991,12 +1199,14 @@
       const at = new URLSearchParams(location.search).get('demo');
       if (at === 'idle') { show('idle'); return; }
       if (at === 'setup') { showSetup(''); return; }
+      if (at === 'name') { showSetup(''); showNameStep(); return; }
       // optional knobs for screenshots: &n=track index, &t=start second, &ly=0 hides lyrics
       const q = new URLSearchParams(location.search);
       demoIdx = parseInt(q.get('n') || '0', 10) || 0;
       if (q.get('ly') === '0') S.showLyrics = false;
       S.device = DEMO_DEVICES[0];
       demoLoad(demoIdx);
+      showGreeting();
       const t0 = parseFloat(q.get('t') || (at === 'seek' ? '30' : '0'));
       if (t0 > 0) S.anchor = { p: t0 * 1000, t: Date.now() };
       return;
@@ -1006,6 +1216,7 @@
     try { S.token = JSON.parse(store.get('tok') || 'null'); } catch (e) { S.token = null; }
     if (!store.get('cid') || !S.token) { showSetup(err || ''); return; }
     show('idle');
+    showGreeting();
     poll();
   }
   boot();

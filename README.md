@@ -41,7 +41,9 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Shuffle and repeat** (off / all / one) buttons beside the transport controls.
 - **Like**: a heart next to the artist adds the song to your Liked Songs, and shows when it already is.
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
-- **Device switcher**: the speaker button in the top bar moves playback to any of your Spotify Connect devices.
+- **Playlists**: the library button in the top bar lists your Spotify playlists; tap one to play it. The same sheet has a **Devices** tab to move playback to any of your Spotify Connect devices.
+- **Greets you by name**: the setup asks for your name once (skippable, editable in Settings), then a short "Good evening, name" appears every time you open the app, and on the idle screen.
+- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, F full screen, P playlists, D devices.
 - **Five lyric styles** (Settings): **Scroll** (all lines), **Karaoke** (words light up as they're sung), **One line**, **Two lines** (current and next) and **Word by word** (words appear one at a time). LRCLIB only has line timings, so word timing is estimated from word length.
 - **Auto-hiding buttons**: the top bar, transport buttons and heart fade out after 5 s without a touch. The first tap only brings them back, so you can't press something by accident.
 - **Settings**: lyric style and size (S to XL), show or hide the clock, auto-hide, full screen, and keep-screen-awake. Saved in this browser.
@@ -102,6 +104,8 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 | "INVALID_CLIENT: Invalid redirect URI" | The Redirect URI in the Spotify dashboard must match the site address exactly (trailing `/`, `https`, same capitalisation). |
 | Nothing shows after login | Press play in Spotify first. The web API only reports an active playback device. |
 | Buttons do nothing | Controlling playback needs Premium. |
+| Playlists say Spotify needs one more permission | Tap **Reconnect Spotify** once and approve the playlist permission. |
+| "Pick a device to play on first" | Spotify has no active device. Open Spotify somewhere, or choose one in the Devices tab. |
 | The heart asks to reconnect | Likes need two extra Spotify permissions. Tap the heart again (or Settings -> Reconnect) and approve once. |
 | Volume swipe says the device sets its own volume | Some devices, such as iPhones running Spotify, don't let other apps change their volume. |
 | Screen turns off on iPhone | Screen Wake Lock needs iOS 16.4+, and works best from the home-screen app. |

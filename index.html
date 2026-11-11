@@ -26,8 +26,8 @@
   <button id="btnLyrics" class="ib small" aria-label="Show or hide lyrics" hidden>
     <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
   </button>
-  <button id="btnDev" class="ib small" aria-label="Choose device">
-    <svg viewBox="0 0 24 24"><path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 1.99 2 1.99L17 22c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+  <button id="btnDev" class="ib small" aria-label="Playlists and devices">
+    <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
   </button>
   <button id="btnSet" class="ib small" aria-label="Settings">
     <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -74,6 +74,7 @@
 
   <!-- Idle: big clock when nothing is playing -->
   <section id="idle" hidden>
+    <div id="idleGreet"></div>
     <div id="idleClock"></div>
     <div id="idleDate"></div>
     <p id="idleMsg">Open Spotify and press play</p>
@@ -82,7 +83,7 @@
 
   <!-- Setup / login -->
   <section id="setup" hidden>
-    <div class="card">
+    <div class="card" id="setupCard">
       <h2>Connect Spotify</h2>
       <ol>
         <li>Open <b>developer.spotify.com/dashboard</b> → <b>Create app</b>. Tick <b>Web API</b>.</li>
@@ -96,10 +97,18 @@
       <p id="setupMsg"></p>
       <p class="hint">Controlling playback needs Spotify Premium. Tip: do this inside the installed home-screen app, not in Safari.</p>
     </div>
+    <div class="card" id="nameStep" hidden>
+      <h2>What should I call you?</h2>
+      <p class="sheetText">I'll greet you by name whenever you open the app. It stays on this device.</p>
+      <input id="nameIn" type="text" maxlength="24" autocomplete="given-name" autocapitalize="words" spellcheck="false" placeholder="Your name">
+      <button id="nameGo" class="pill">Continue to Spotify</button>
+      <button id="nameSkip" class="link">Skip</button>
+    </div>
   </section>
 </main>
 
 <div id="toast"></div>
+<div id="greet" hidden><div id="greetHi"></div><div id="greetName"></div></div>
 
 <!-- Shown when the browser can't do real full screen (iPhone Safari) -->
 <div id="sheet" hidden>
@@ -120,9 +129,18 @@
 <!-- Devices -->
 <div id="devSheet" class="sheet" hidden>
   <div class="card">
-    <h2>Play on</h2>
+    <div class="seg tabs" id="libTabs"><button data-v="pl">Playlists</button><button data-v="dev">Devices</button></div>
     <div id="devList"></div>
     <button id="devClose" class="link">Close</button>
+  </div>
+</div>
+
+<!-- Keyboard shortcuts -->
+<div id="helpSheet" class="sheet" hidden>
+  <div class="card">
+    <h2>Keyboard shortcuts</h2>
+    <div id="helpList"></div>
+    <button id="helpClose" class="link">Close</button>
   </div>
 </div>
 
@@ -130,6 +148,7 @@
 <div id="setSheet" class="sheet" hidden>
   <div class="card">
     <h2>Settings</h2>
+    <label class="row"><span>Your name</span><input id="cfgName" class="txt" type="text" maxlength="24" autocomplete="off" placeholder="Name"></label>
     <div class="row col"><span>Lyrics style</span>
       <div class="seg wrap" id="cfgStyle"><button data-v="scroll">Scroll</button><button data-v="karaoke">Karaoke</button><button data-v="focus">One line</button><button data-v="duo">Two lines</button><button data-v="words">Word by word</button></div>
     </div>
@@ -139,8 +158,9 @@
     <label class="row"><span>Show the clock on the player</span><input type="checkbox" class="sw" id="cfgClock"></label>
     <label class="row"><span>Keep the screen awake</span><input type="checkbox" class="sw" id="cfgAwake"></label>
     <label class="row"><span>Hide the buttons after 5 s</span><input type="checkbox" class="sw" id="cfgHide"></label>
+    <div class="row" id="rowKeys"><span>Keyboard shortcuts</span><button id="cfgKeys" class="mini">Show</button></div>
     <div class="row" id="rowFull"><span>Full screen</span><button id="btnFull" class="mini">Enter</button></div>
-    <div class="row" id="rowLikes"><span>Likes need one more permission</span><button id="cfgReconnect" class="mini">Reconnect</button></div>
+    <div class="row" id="rowLikes"><span>New features need one more permission</span><button id="cfgReconnect" class="mini">Reconnect</button></div>
     <button id="setClose" class="pill">Done</button>
     <button id="cfgDisconnect" class="link">Disconnect Spotify</button>
   </div>
