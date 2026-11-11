@@ -6,6 +6,7 @@
 Big cover art, live scrolling lyrics, transport controls. It stays awake, and it's a static web page: no server, no libraries, no tracking.
 
 <p>
+<a href="https://github.com/HaidarESBER/nowplaying/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/HaidarESBER/nowplaying/actions/workflows/ci.yml/badge.svg"></a>
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 <a href="https://haidaresber.github.io/nowplaying/?demo"><img alt="Live demo" src="https://img.shields.io/badge/demo-live-1db954.svg"></a>
 <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-5a0fc8.svg">
