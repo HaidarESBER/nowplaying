@@ -39,7 +39,7 @@
   };
 
   // ------------------------------------------------------------------ settings (this browser only)
-  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true };
+  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true, fx: 'full' };
   try { Object.assign(cfg, JSON.parse(store.get('cfg') || '{}')); } catch (e) { /* defaults */ }
 
   // ------------------------------------------------------------------ state
@@ -323,6 +323,7 @@
       el.artist.textContent = t.album && t.album !== t.title ? t.artist + '  ·  ' + t.album : t.artist;
       el.cover.src = t.art || '';
       setWash(t.art);
+      paletteOf(t.art).then((p) => { if (S.trackId === t.id) applyPalette(p); });
       el.coverWrap.classList.remove('swap'); el.meta.classList.remove('swap');
     };
     if (first) { apply(); } else {
@@ -445,6 +446,7 @@
           p.className = 'ln' + (isRTL(l.s) ? ' rtl' : '');
           p.textContent = l.s || '♪';
           p.dir = 'auto';
+          p.dataset.t = l.s || '\u266a';                      // copy of the text: the rock "slice" animation draws it in halves
           frag.appendChild(p);
         });
         el.lyricsInner.appendChild(frag);
@@ -482,6 +484,7 @@
       const d = Math.abs(i - idx);
       const n = nodes[i];
       n.classList.toggle('act', d === 0);
+      if (d === 0) n.dataset.v = String(nextVariant());
       n.classList.toggle('d1', d === 1);
       n.classList.toggle('d2', d === 2);
       n.classList.toggle('nx', i === idx + 1);
@@ -921,6 +924,64 @@
   el.btnDev.addEventListener('click', () => openLibrary());
   $('devClose').addEventListener('click', () => { el.devSheet.hidden = true; });
 
+  // ------------------------------------------------------------------ colours of the cover -> three hues for the genre looks
+  function nextVariant() { S.vLast = ((S.vLast == null ? -1 : S.vLast) + 1 + Math.floor(Math.random() * 3)) % 4; return S.vLast; }   // 0-3, never the same twice in a row
+
+  function paletteOf(url) {
+    return new Promise((resolve) => {
+      if (!url) return resolve(null);
+      const im = new Image();
+      im.crossOrigin = 'anonymous';                                   // Spotify's image servers allow this; otherwise we keep the look's own colours
+      const to = setTimeout(() => resolve(null), 3000);
+      im.onload = () => {
+        clearTimeout(to);
+        try {
+          const N = 40, cv = document.createElement('canvas');
+          cv.width = cv.height = N;
+          const g = cv.getContext('2d', { willReadFrequently: true });
+          g.drawImage(im, 0, 0, N, N);
+          const d = g.getImageData(0, 0, N, N).data;
+          const wgt = new Array(36).fill(0), sx = new Array(36).fill(0), sy = new Array(36).fill(0);
+          let vivid = 0;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255;
+            const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), df = mx - mn;
+            if (mx < 0.2 || df < 0.12) continue;                      // too dark or grey: no useful hue
+            let h = mx === r ? ((gg - b) / df) % 6 : mx === gg ? (b - r) / df + 2 : (r - gg) / df + 4;
+            h = (h * 60 + 360) % 360;
+            const w = (df / mx) * (df / mx) * mx;                     // vivid, bright pixels count most
+            const k = Math.floor(h / 10) % 36;
+            wgt[k] += w; sx[k] += w * Math.cos(h * Math.PI / 180); sy[k] += w * Math.sin(h * Math.PI / 180); vivid += w;
+          }
+          if (vivid < N * N * 0.02) return resolve(null);              // a grey / dark cover keeps the look's own colours
+          const hueOf = (k) => Math.round(((Math.atan2(sy[k], sx[k]) * 180 / Math.PI) + 360) % 360);
+          const score = (k) => wgt[k] + 0.5 * (wgt[(k + 35) % 36] + wgt[(k + 1) % 36]);
+          const order = Array.from({ length: 36 }, (_, k) => k).sort((a, b) => score(b) - score(a));
+          const gap = (a, b) => { const x = Math.abs(a - b) % 360; return x > 180 ? 360 - x : x; };
+          const h1 = hueOf(order[0]);
+          let h2 = null, h3 = null;
+          for (const k of order) {
+            if (!wgt[k]) break;
+            const h = hueOf(k);
+            if (h2 === null) { if (gap(h, h1) >= 40) h2 = h; }
+            else if (gap(h, h1) >= 40 && gap(h, h2) >= 40) { h3 = h; break; }
+          }
+          if (h2 === null) h2 = (h1 + 35) % 360;                       // single-colour cover: a neighbour and the complement
+          if (h3 === null) h3 = (h1 + 180) % 360;
+          resolve({ h1, h2, h3 });
+        } catch (e) { resolve(null); }
+      };
+      im.onerror = () => { clearTimeout(to); resolve(null); };
+      im.src = url;
+    });
+  }
+  function applyPalette(p) {
+    const st = document.body.style;
+    if (p) { st.setProperty('--h1', p.h1); st.setProperty('--h2', p.h2); st.setProperty('--h3', p.h3); }
+    else ['--h1', '--h2', '--h3'].forEach((k) => st.removeProperty(k));
+  }
+  if (DEMO) window.__npPalette = paletteOf;                            // for testing
+
   // ------------------------------------------------------------------ genre looks
   // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
   // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
@@ -950,6 +1011,7 @@
   function applyGenre() {
     const f = cfg.genre ? (S.gforce !== undefined ? S.gforce : S.gfam) : '';
     FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
+    document.body.classList.toggle('fx-lite', cfg.fx === 'lite');
     setTimeout(() => centerLine(S.lineIdx, true), 60);             // the typeface changes line heights: re-centre
   }
   // Genre detection: look the song up online first (Apple Music search, then MusicBrainz tags), and only if neither
@@ -1282,7 +1344,8 @@
     setTimeout(() => centerLine(S.lineIdx, true), 80);           // line heights changed: re-centre the lyrics
   }
   function syncSettingsUI() {
-    $('cfgGenre').checked = cfg.genre; updateGenreInfo();
+    document.querySelectorAll('#cfgFx button').forEach((b) => b.classList.toggle('on', b.dataset.v === (cfg.genre ? cfg.fx : 'off')));
+    updateGenreInfo();
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
@@ -1295,7 +1358,12 @@
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
-  $('cfgGenre').addEventListener('change', (e) => { cfg.genre = e.target.checked; saveCfg(); applyGenre(); if (cfg.genre && S.track && !S.gfam) loadGenre(S.track); else updateGenreInfo(); });
+  $('cfgFx').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    cfg.genre = b.dataset.v !== 'off'; if (cfg.genre) cfg.fx = b.dataset.v;
+    saveCfg(); applyGenre(); syncSettingsUI();
+    if (cfg.genre && S.track && !S.gfam) loadGenre(S.track);
+  });
   $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
   $('cfgStyle').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
