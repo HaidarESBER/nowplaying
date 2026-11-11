@@ -43,8 +43,9 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
 - **Playlists**: the library button in the top bar lists your Spotify playlists; tap one to play it. The same sheet has a **Devices** tab to move playback to any of your Spotify Connect devices.
 - **Greets you by name**: the setup asks for your name once (skippable, editable in Settings), then a short "Good evening, name" appears every time you open the app, and on the idle screen.
-- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, F full screen, P playlists, D devices.
+- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, G genre look preview, F full screen, P playlists, D devices.
 - **Five lyric styles** (Settings): **Scroll** (all lines), **Karaoke** (words light up as they're sung), **One line**, **Two lines** (current and next) and **Word by word** (words appear one at a time). LRCLIB only has line timings, so word timing is estimated from word length.
+- **Genre looks**: the lyrics take on the character of the music. The artist's Spotify genre picks one of nine looks: *hip-hop* (slammed-in uppercase with a comic shadow, pulsing halftone), *rock* (burning glow, stage-light flicker, rising embers), *electronic* (neon glitch, racing grid), *classical & jazz* (gold serif italic that unfolds, floating dust), *lo-fi & chill* (dissolves out of the haze, gentle float, soft bokeh), *R&B & soul* (swaying with the groove, warm glow), *country & folk* (handwritten, written out line by line, fireflies), *Latin & reggae* (bouncy pop-in, sunset blobs) and *pop* (bubbly bounce, candy-coloured glow, confetti). Artists without a genre keep the normal look. Effects freeze while paused, respect "reduce motion", and can be turned off in Settings. Press **G** to preview each look.
 - **Auto-hiding buttons**: the top bar, transport buttons and heart fade out after 5 s without a touch. The first tap only brings them back, so you can't press something by accident.
 - **Settings**: lyric style and size (S to XL), show or hide the clock, auto-hide, full screen, and keep-screen-awake. Saved in this browser.
 - **Synced lyrics** from [LRCLIB](https://lrclib.net) that scroll with the song, big and readable from across the room. Works with right-to-left languages. One lyrics button hides or shows them.
@@ -131,7 +132,7 @@ Plain HTML, CSS and JS in three files (`index.html`, `style.css`, `app.js`), no 
 
 ## Privacy
 
-No analytics, no cookies, no server of mine. Requests go to Spotify (to play/control) and LRCLIB (lyrics), and your Spotify tokens never leave your browser.
+No analytics, no cookies, no server of mine. Requests go to Spotify (to play/control, and one artist lookup per new artist for the genre, cached in your browser) and LRCLIB (lyrics), and your Spotify tokens never leave your browser.
 
 ## License
 

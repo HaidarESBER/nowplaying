@@ -39,7 +39,7 @@
   };
 
   // ------------------------------------------------------------------ settings (this browser only)
-  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll' };
+  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true };
   try { Object.assign(cfg, JSON.parse(store.get('cfg') || '{}')); } catch (e) { /* defaults */ }
 
   // ------------------------------------------------------------------ state
@@ -279,6 +279,7 @@
       art: (images[0] && images[0].url) || '',
       dur: it.duration_ms || 0,
       type: it.type || 'track',
+      artistId: (it.artists && it.artists[0] && it.artists[0].id) || '',
     };
     S.playing = !!j.is_playing;
     if (Date.now() > S.hold) {
@@ -307,7 +308,7 @@
     const first = !S.track;
     S.trackId = t.id;
     S.track = t;
-    S.liked = false; renderLike(); loadLiked(t);
+    S.liked = false; renderLike(); loadLiked(t); loadGenre(t);
     el.tDur.textContent = fmt(t.dur);
     el.seek.max = Math.max(1, Math.floor(t.dur / 1000));
 
@@ -347,6 +348,7 @@
     // SVG elements have no .hidden property, so toggle the attribute directly
     el.icoPlay.toggleAttribute('hidden', S.playing);
     el.icoPause.toggleAttribute('hidden', !S.playing);
+    document.body.classList.toggle('paused', !S.playing);
   }
 
   function position() {
@@ -919,6 +921,59 @@
   el.btnDev.addEventListener('click', () => openLibrary());
   $('devClose').addEventListener('click', () => { el.devSheet.hidden = true; });
 
+  // ------------------------------------------------------------------ genre looks
+  // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
+  // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
+  const GENRE_RULES = [
+    ['hiphop', /hip.?hop|\brap\b|trap|drill|grime|boom bap|crunk|phonk/],
+    ['rock', /metal|rock|punk|grunge|hardcore|\bemo\b|garage/],
+    ['electronic', /\bedm\b|electro|house|techno|trance|dubstep|drum and bass|\bdnb\b|synthwave|big room|future bass|hardstyle|\bclub\b|\brave\b/],
+    ['classical', /classical|orchestra|opera|baroque|piano|jazz|bebop|swing|big band|soundtrack|\bscore\b|cinematic/],
+    ['chill', /lo-?fi|chill|ambient|dream|downtempo|sleep|shoegaze|new age|bedroom|meditation|\bstudy\b/],
+    ['soul', /r&b|\brnb\b|soul|funk|motown|disco|quiet storm|gospel/],
+    ['country', /country|folk|bluegrass|americana|blues|singer-songwriter|acoustic|cowboy|western|\broots\b/],
+    ['tropical', /reggae|dancehall|reggaeton|latin|salsa|bachata|afro|dembow|cumbia|tropical|samba|bossa|arab|\brai\b|ra\u00ef|khaleeji|mizrahi|amapiano/],
+    ['pop', /pop|dance|teen|boy band|idol/],
+  ];
+  const FAMS = GENRE_RULES.map((r) => r[0]);
+  const FAM_NAMES = { hiphop: 'Hip-hop', rock: 'Rock', electronic: 'Electronic', classical: 'Classical & jazz', chill: 'Lo-fi & chill',
+    soul: 'R&B & soul', country: 'Country & folk', tropical: 'Latin & reggae', pop: 'Pop' };
+  const familyOf = (gs) => {
+    const l = (gs || []).map((g) => String(g).toLowerCase());
+    for (const [f, re] of GENRE_RULES) if (l.some((g) => re.test(g))) return f;
+    return '';
+  };
+  S.gfam = '';
+  { const gp = new URLSearchParams(location.search).get('genre'); if (gp) S.gforce = FAMS.indexOf(gp) >= 0 ? gp : ''; }   // ?genre=rock previews a look
+
+  function applyGenre() {
+    const f = cfg.genre ? (S.gforce !== undefined ? S.gforce : S.gfam) : '';
+    FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
+    setTimeout(() => centerLine(S.lineIdx, true), 60);             // the typeface changes line heights: re-centre
+  }
+  async function loadGenre(t) {
+    S.gfam = '';
+    if (t.genres) { S.gfam = familyOf(t.genres); applyGenre(); return; }       // demo songs carry their own genres
+    applyGenre();
+    if (!t.artistId || DEMO) return;
+    let gs = null;
+    try { gs = JSON.parse(store.get('g_' + t.artistId) || 'null'); } catch (e) { gs = null; }
+    if (!gs) {
+      try {
+        const r = await api('GET', '/artists/' + t.artistId);
+        if (r.ok) { gs = (await r.json()).genres || []; store.set('g_' + t.artistId, JSON.stringify(gs)); }
+      } catch (e) { /* offline: default look */ }
+    }
+    if (gs && S.trackId === t.id) { S.gfam = familyOf(gs); applyGenre(); }
+  }
+  function cycleGenreLook() {                                      // G: preview every look (auto -> each family -> auto)
+    const order = [undefined].concat(FAMS);
+    const i = order.indexOf(S.gforce);
+    S.gforce = order[(i + 1) % order.length];
+    applyGenre();
+    toast(S.gforce === undefined ? 'Genre look: automatic' + (S.gfam ? ' (' + FAM_NAMES[S.gfam] + ')' : '') : 'Genre look: ' + FAM_NAMES[S.gforce]);
+  }
+
   // ------------------------------------------------------------------ library: playlists + devices (one sheet, two tabs)
   let libTab = 'pl';
   const hasScopes = (list) => !!(S.token && S.token.scope && list.every((x) => S.token.scope.split(' ').includes(x)));
@@ -1013,7 +1068,7 @@
   const SHORTCUTS = [
     [['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 5 s'], [['Shift', '← →'], 'Previous / next song'],
     [['N', 'B'], 'Next / previous song'], [['↑', '↓'], 'Volume up / down'], [['M'], 'Mute'],
-    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'],
+    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'],
     [['F'], 'Full screen'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
   ];
   (() => {
@@ -1076,6 +1131,7 @@
       case 'l': case 'L': el.like.click(); break;
       case 't': case 'T': if (!el.btnLyrics.hidden) el.btnLyrics.click(); break;
       case 'y': case 'Y': cycleLyricStyle(); break;
+      case 'g': case 'G': cycleGenreLook(); break;
       case 'f': case 'F': toggleFullscreen(); break;
       case 'p': case 'P': openLibrary('pl'); break;
       case 'd': case 'D': openLibrary('dev'); break;
@@ -1119,11 +1175,13 @@
     if (['scroll', 'karaoke', 'focus', 'duo', 'words'].indexOf(cfg.lstyle) < 0) cfg.lstyle = 'scroll';
     ['scroll', 'karaoke', 'focus', 'duo', 'words'].forEach((k) => document.body.classList.toggle('ls-' + k, cfg.lstyle === k));
     clearWords(); prepareWords(S.lineIdx);
+    if (typeof applyGenre === 'function') applyGenre();
     if (!cfg.awake && wake) { try { wake.release(); } catch (e) { /* ignore */ } wake = null; }
     if (cfg.awake) lockScreen();
     setTimeout(() => centerLine(S.lineIdx, true), 80);           // line heights changed: re-centre the lyrics
   }
   function syncSettingsUI() {
+    $('cfgGenre').checked = cfg.genre;
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
@@ -1136,6 +1194,7 @@
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
+  $('cfgGenre').addEventListener('change', (e) => { cfg.genre = e.target.checked; saveCfg(); applyGenre(); });
   $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
   $('cfgStyle').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -1155,10 +1214,10 @@
 
   // ------------------------------------------------------------------ demo mode (?demo): fake data, no Spotify needed
   const DEMO_TRACKS = [
-    { id: 'd1', title: 'Golden Hour Drive', artist: 'The Demo Band', album: 'Preview Sessions', hue: 22, dur: 214000,
+    { id: 'd1', title: 'Golden Hour Drive', artist: 'The Demo Band', album: 'Preview Sessions', hue: 22, dur: 214000, genres: ['dance pop', 'pop'],
       lines: ['(intro)', 'Headlights paint the evening gold', 'Windows down and nothing to hold', 'Every mile a little slower now', 'We forgot to ask where, forgot to ask how',
         'Sing it loud, the radio knows', 'Every word that the summer owes', 'Hold the moment, let it ring', 'This is the part where the chorus sings', '', 'Oh, we are golden, we are free', 'Nothing left to prove to me', 'Turn it up, the night is long', 'And the road is carrying the song'] },
-    { id: 'd2', title: 'ليل المدينة', artist: 'فرقة العرض', album: 'نسخة تجريبية', hue: 205, dur: 187000,
+    { id: 'd2', title: 'ليل المدينة', artist: 'فرقة العرض', album: 'نسخة تجريبية', hue: 205, dur: 187000, genres: ['arabic pop', 'khaleeji'],
       lines: ['(مقدمة)', 'الليل يمشي على أطراف المدينة', 'والنور يسهر فوق الشرفات', 'نحنا كنا هون وما سألنا حدا', 'والوقت يلعب بين الذكريات', 'غني معي هالأغنية الحلوة', 'كل كلمة بتعرف طريقها', 'ولا تسأل وين رايحين', 'المهم إنو الطريق جميل'] },
   ];
   let demoIdx = 0;
@@ -1179,7 +1238,7 @@
     S.playing = true; S.anchor = { p: 0, t: Date.now() };
     if (S.screen !== 'player') show('player');
     S.trackId = null;
-    newTrack({ id: d.id, title: d.title, artist: d.artist, album: d.album, art: demoCover(d.hue), dur: d.dur, type: 'track' });
+    newTrack({ id: d.id, title: d.title, artist: d.artist, album: d.album, art: demoCover(d.hue), dur: d.dur, type: 'track', genres: d.genres });
     // synthetic synced lyrics: one line every ~7 s
     setLyrics(d.lines.map((s, k) => ({ t: 4000 + k * 7000, s })));
     renderPlayState();
