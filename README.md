@@ -29,9 +29,9 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 |---|---|---|---|
 | <img src="docs/portrait-lyrics.png" width="200"> | <img src="docs/portrait-cover.png" width="200"> | <img src="docs/setup.png" width="200"> | ![](docs/idle.png) |
 
-| Device switcher | Settings |
-|---|---|
-| ![](docs/devices.png) | <img src="docs/settings.png" width="200"> |
+| Device switcher | Settings | One line | Word by word |
+|---|---|---|---|
+| ![](docs/devices.png) | <img src="docs/settings.png" width="200"> | ![](docs/style-focus.png) | ![](docs/style-words.png) |
 
 *Screenshots use the built-in demo mode (fake songs), so no real artwork is shown.*
 
@@ -42,14 +42,16 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Like**: a heart next to the artist adds the song to your Liked Songs, and shows when it already is.
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
 - **Device switcher**: the speaker button in the top bar moves playback to any of your Spotify Connect devices.
-- **Settings**: lyric size (S to XL), show or hide the clock, and keep-screen-awake on or off. Saved in this browser.
+- **Five lyric styles** (Settings): **Scroll** (all lines), **Karaoke** (words light up as they're sung), **One line**, **Two lines** (current and next) and **Word by word** (words appear one at a time). LRCLIB only has line timings, so word timing is estimated from word length.
+- **Auto-hiding buttons**: the top bar, transport buttons and heart fade out after 5 s without a touch. The first tap only brings them back, so you can't press something by accident.
+- **Settings**: lyric style and size (S to XL), show or hide the clock, auto-hide, full screen, and keep-screen-awake. Saved in this browser.
 - **Synced lyrics** from [LRCLIB](https://lrclib.net) that scroll with the song, big and readable from across the room. Works with right-to-left languages. One lyrics button hides or shows them.
 - **Scroll the lyrics yourself**: drag or flick them (mouse wheel on desktop) to read ahead or look back. Auto-scroll pauses, and after a few seconds, or when you tap **Now**, they glide back to the current line.
 - **Tap a lyric line to jump there**: Spotify seeks to that line of the song (needs Premium, like the other controls).
 - **Colours from the cover**: the background is a blurred wash of the current album art.
 - **Layouts for both orientations**, with or without lyrics.
 - **Always on**: Screen Wake Lock keeps the display awake, and the app never changes your brightness.
-- **Full screen** button (Android, desktop, iPad). On iPhone, install it to the home screen for a bar-free full screen.
+- **Full screen** (Settings -> Full screen; Android, desktop, iPad). On iPhone, install it to the home screen for a bar-free full screen.
 - **Idle mode**: a large clock when nothing is playing.
 - **Light on the network**: one Spotify request every ~3.5 s while playing, every 8 s when paused, none in the background.
 - **Private**: your Spotify login stays in your browser (PKCE, no client secret). The only other request is one lyrics lookup per song.
@@ -103,7 +105,7 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 | The heart asks to reconnect | Likes need two extra Spotify permissions. Tap the heart again (or Settings -> Reconnect) and approve once. |
 | Volume swipe says the device sets its own volume | Some devices, such as iPhones running Spotify, don't let other apps change their volume. |
 | Screen turns off on iPhone | Screen Wake Lock needs iOS 16.4+, and works best from the home-screen app. |
-| Full screen button shows a guide on iPhone | Safari can't do real full screen. Use the home-screen app instead. |
+| Full screen (in Settings) shows a guide on iPhone | Safari can't do real full screen. Use the home-screen app instead. |
 | No lyrics for a song | LRCLIB doesn't have every track. The cover layout is used instead. |
 
 ## How it works

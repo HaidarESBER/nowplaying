@@ -16,7 +16,7 @@
   const $ = (id) => document.getElementById(id);
   const el = {
     bgA: $('bgA'), bgB: $('bgB'), clock: $('clock'), btnLyrics: $('btnLyrics'),
-    btnFull: $('btnFull'), icoFull: $('icoFull'), icoFullExit: $('icoFullExit'),
+    btnFull: $('btnFull'),
     player: $('player'), idle: $('idle'), setup: $('setup'),
     cover: $('cover'), title: $('title'), artist: $('artist'),
     lyrics: $('lyrics'), lyricsInner: $('lyricsInner'), coverWrap: $('coverWrap'), meta: $('meta'), lyricsNow: $('lyricsNow'),
@@ -39,7 +39,7 @@
   };
 
   // ------------------------------------------------------------------ settings (this browser only)
-  const cfg = { lscale: 1, clock: true, awake: true };
+  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll' };
   try { Object.assign(cfg, JSON.parse(store.get('cfg') || '{}')); } catch (e) { /* defaults */ }
 
   // ------------------------------------------------------------------ state
@@ -77,6 +77,7 @@
     el.clock.hidden = screen !== 'player';
     if (screen !== 'player') { el.btnLyrics.hidden = true; document.body.classList.remove('lyrics'); }
     if (screen === 'idle') tickClock();
+    if (screen === 'player') armHide(); else document.body.classList.remove('chrome-off');
   }
 
   // ------------------------------------------------------------------ clock
@@ -142,11 +143,10 @@
       if (p && typeof p.catch === 'function') p.catch(refused);
     } catch (e) { refused(e); }
   }
-  el.btnFull.addEventListener('click', toggleFullscreen);
+  el.btnFull.addEventListener('click', () => { el.setSheet.hidden = true; toggleFullscreen(); });
   ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => {
     const on = !!fsElement();
-    el.icoFull.toggleAttribute('hidden', on);
-    el.icoFullExit.toggleAttribute('hidden', !on);
+    el.btnFull.textContent = on ? 'Exit' : 'Enter';
     lockScreen();
   }));
 
@@ -415,6 +415,7 @@
       const has = !!(S.lines && S.lines.length);      // read the latest state when the fade ends
       const want = has && S.showLyrics;
       leaveBrowse();
+      W = null;
       el.lyricsInner.textContent = '';
       if (has) {
         const frag = document.createDocumentFragment();
@@ -462,7 +463,9 @@
       n.classList.toggle('act', d === 0);
       n.classList.toggle('d1', d === 1);
       n.classList.toggle('d2', d === 2);
+      n.classList.toggle('nx', i === idx + 1);
     }
+    prepareWords(idx);
     centerLine(idx, old === -3);
   }
 
@@ -579,6 +582,48 @@
     }, { passive: false });
     el.lyricsNow.addEventListener('click', exitBrowse);
   })();
+
+  // ------------------------------------------------------------------ word-by-word lyrics (Karaoke / Word by word styles)
+  // LRCLIB only has line timings, so word times are estimated: the words share the line's time by their length.
+  let W = null;
+  const wantsWords = () => cfg.lstyle === 'karaoke' || cfg.lstyle === 'words';
+  function clearWords() {
+    if (W && W.node && W.node.isConnected) W.node.textContent = W.text || '\u266a';
+    W = null;
+  }
+  function prepareWords(idx) {
+    clearWords();
+    if (!wantsWords() || idx < 0 || !S.lines || !S.lines[idx]) return;
+    const node = el.lyricsInner.children[idx], line = S.lines[idx];
+    const text = line.s || '';
+    const toks = text.split(/\s+/).filter(Boolean);
+    if (!node || toks.length < 2) return;                          // a single word has nothing to stagger
+    node.textContent = '';
+    const wt = toks.map((t) => t.length + 1.5), total = wt.reduce((a, b) => a + b, 0);
+    const spans = [], starts = [];
+    let acc = 0;
+    toks.forEach((t, i) => {
+      const sp = document.createElement('span');
+      sp.className = 'w'; sp.textContent = t;
+      node.appendChild(sp);
+      if (i < toks.length - 1) node.appendChild(document.createTextNode(' '));
+      spans.push(sp); starts.push(acc / total); acc += wt[i];
+    });
+    const next = S.lines[idx + 1];
+    const gap = next ? next.t - line.t : 6000;
+    W = { node, text, t: line.t, spans, starts, span: Math.min(gap * 0.9, Math.max(1400, text.length * 105)), n: -1 };
+    wordTick();
+  }
+  function wordTick() {
+    if (!W) return;
+    const rel = position() - W.t;
+    let n = 0;
+    for (let i = 0; i < W.starts.length; i++) if (rel >= W.starts[i] * W.span) n = i + 1;
+    if (n === W.n) return;
+    W.n = n;
+    W.spans.forEach((sp, i) => sp.classList.toggle('on', i < n));
+  }
+  setInterval(wordTick, 100);
 
   // ------------------------------------------------------------------ controls
   async function control(kind) {
@@ -838,17 +883,44 @@
   el.btnDev.addEventListener('click', openDevices);
   $('devClose').addEventListener('click', () => { el.devSheet.hidden = true; });
 
+  // ------------------------------------------------------------------ auto-hide the buttons
+  let hideT = 0, lastAct = 0, swallow = false;
+  const anySheet = () => !el.devSheet.hidden || !el.setSheet.hidden || !sheet.hidden;
+  function armHide() {
+    clearTimeout(hideT);
+    if (!cfg.autohide || S.screen !== 'player') return;
+    hideT = setTimeout(() => {
+      if (anySheet() || B.on) { armHide(); return; }               // never hide while a panel is open or while scrolling lyrics
+      document.body.classList.add('chrome-off');
+    }, 5000);
+  }
+  function chromeShow() { document.body.classList.remove('chrome-off'); armHide(); }
+  function onActivity(e) {
+    const off = document.body.classList.contains('chrome-off');
+    if (off && e.type === 'pointerdown') { swallow = true; setTimeout(() => { swallow = false; }, 450); }   // that tap only reveals
+    const now = Date.now();
+    if (!off && e.type !== 'pointerdown' && now - lastAct < 400) return;                                // throttle mouse moves
+    lastAct = now;
+    chromeShow();
+  }
+  ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach((ev) => window.addEventListener(ev, onActivity, { capture: true, passive: true }));
+  document.addEventListener('click', (e) => { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true);
+
   // ------------------------------------------------------------------ settings panel
   function saveCfg() { store.set('cfg', JSON.stringify(cfg)); }
   function applyCfg() {
     document.documentElement.style.setProperty('--lscale', cfg.lscale);
     document.body.classList.toggle('noclock', !cfg.clock);
+    if (['scroll', 'karaoke', 'focus', 'duo', 'words'].indexOf(cfg.lstyle) < 0) cfg.lstyle = 'scroll';
+    ['scroll', 'karaoke', 'focus', 'duo', 'words'].forEach((k) => document.body.classList.toggle('ls-' + k, cfg.lstyle === k));
+    clearWords(); prepareWords(S.lineIdx);
     if (!cfg.awake && wake) { try { wake.release(); } catch (e) { /* ignore */ } wake = null; }
     if (cfg.awake) lockScreen();
     setTimeout(() => centerLine(S.lineIdx, true), 80);           // line heights changed: re-centre the lyrics
   }
   function syncSettingsUI() {
-    $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake;
+    $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
+    document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
     $('rowLikes').hidden = DEMO || hasLib();
   }
@@ -856,6 +928,11 @@
   $('setClose').addEventListener('click', () => { el.setSheet.hidden = true; });
   $('cfgClock').addEventListener('change', (e) => { cfg.clock = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
+  $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
+  $('cfgStyle').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    cfg.lstyle = b.dataset.v; saveCfg(); applyCfg(); syncSettingsUI();
+  });
   $('cfgSize').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     cfg.lscale = parseFloat(b.dataset.v); saveCfg(); applyCfg(); syncSettingsUI();

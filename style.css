@@ -42,11 +42,15 @@ body { position: fixed; inset: 0; }
 /* ---------- top bar ---------- */
 #topbar {
   position: fixed; z-index: 5;
-  top: max(env(safe-area-inset-top), 12px);
-  right: max(env(safe-area-inset-right), 24px);
-  display: flex; align-items: center; gap: 10px;
+  top: max(env(safe-area-inset-top), 10px);
+  left: max(env(safe-area-inset-left), 18px);
+  right: max(env(safe-area-inset-right), 18px);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  pointer-events: none; transition: opacity .5s ease;
 }
-#clock { font-size: 15px; font-weight: 600; letter-spacing: .08em; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
+#topbar > * { pointer-events: auto; }
+#tools { display: flex; align-items: center; gap: 4px; }
+#clock { pointer-events: none; font-size: 15px; font-weight: 600; letter-spacing: .08em; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
 #topbar .ib.small { width: 42px; height: 42px; }
 #topbar .ib.small svg { width: 24px; height: 24px; }
 #btnLyrics { opacity: .9; }
@@ -176,6 +180,9 @@ body.lyrics #lyrics { display: block; }
 
 /* ---------- landscape ---------- */
 @media (orientation: landscape) {
+  #topbar { justify-content: flex-end; left: auto; right: max(env(safe-area-inset-right), 24px); }
+  #topbar #tools { margin-left: 6px; }
+  body.ls-focus, body.ls-words, body.ls-duo { --act: 1.4; }
   :root { --cover: min(76vh, 40vw); --lyr: clamp(18px, 3.3vh, 28px); --act: 1.25; }
   #player {
     grid-template-columns: auto minmax(0, 1fr); column-gap: 44px;
@@ -204,13 +211,15 @@ body.lyrics #lyrics { display: block; }
 
 /* ---------- portrait ---------- */
 @media (orientation: portrait) {
+  body.ls-focus, body.ls-words, body.ls-duo { --act: 1.2; }
+  #topbar .ib.small { width: 40px; height: 40px; }
   :root { --cover: min(78vw, 38vh); --pad-l: max(env(safe-area-inset-left), 28px); --pad-r: max(env(safe-area-inset-right), 28px); --lyr: clamp(18px, 5.2vw, 26px); --act: 1.14; }
   #player {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 1fr auto auto auto 1fr;
     grid-template-areas: "." "cover" "meta" "controls" ".";
     justify-items: center; row-gap: 20px;
-    padding-top: max(env(safe-area-inset-top), 52px);
+    padding-top: calc(max(env(safe-area-inset-top), 10px) + 56px);
   }
   #coverWrap { justify-self: center; }
   #meta { width: 100%; text-align: center; }
@@ -297,3 +306,24 @@ input.sw:checked::after { transform: translateX(20px); }
 .devNote { margin: 6px 0 0; font-size: 14px; color: rgba(255,255,255,.7); }
 #sheet .sheetText { margin: 0 0 10px; font-size: 14px; color: rgba(255,255,255,.85); }
 #sheet .link { display: block; margin: 12px auto 0; font-size: 14px; }
+
+/* ---------- auto-hide: buttons fade out after a few idle seconds; the first tap only brings them back ---------- */
+#btns, #like { transition: opacity .5s ease; }
+body.chrome-off #topbar, body.chrome-off #btns, body.chrome-off #like { opacity: 0; pointer-events: none; }
+body.chrome-off #topbar > * { pointer-events: none; }
+
+/* ---------- lyric styles ---------- */
+body.ls-focus .ln:not(.act), body.ls-words .ln:not(.act),
+body.ls-duo .ln:not(.act):not(.nx) { opacity: 0; pointer-events: none; }
+body.ls-duo .ln.nx { opacity: .5; }
+#lyrics.browsing .ln { pointer-events: auto; }
+.ln .w { display: inline-block; }
+body.ls-karaoke .ln.act .w { opacity: .38; transition: opacity .25s ease; }
+body.ls-karaoke .ln.act .w.on { opacity: 1; }
+body.ls-words .ln.act .w { opacity: 0; transform: translateY(.35em); transition: opacity .3s ease, transform .3s ease; }
+body.ls-words .ln.act .w.on { opacity: 1; transform: none; }
+
+/* settings: a row whose control sits under its label */
+.row.col { flex-direction: column; align-items: flex-start; }
+.seg.wrap { flex-wrap: wrap; gap: 2px; }
+body.standalone #rowFull { display: none; }
