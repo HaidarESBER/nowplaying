@@ -25,6 +25,12 @@
   <button id="btnLyrics" class="ib small" aria-label="Show or hide lyrics" hidden>
     <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
   </button>
+  <button id="btnDev" class="ib small" aria-label="Choose device">
+    <svg viewBox="0 0 24 24"><path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 1.99 2 1.99L17 22c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+  </button>
+  <button id="btnSet" class="ib small" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+  </button>
   <button id="btnFull" class="ib small" aria-label="Full screen">
     <svg id="icoFull" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
     <svg id="icoFullExit" viewBox="0 0 24 24" hidden><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
@@ -34,12 +40,23 @@
 <main>
   <!-- Player: cover / meta / lyrics / controls are laid out with CSS grid areas -->
   <section id="player" hidden>
-    <div id="coverWrap"><img id="cover" alt=""></div>
+    <div id="coverWrap"><img id="cover" alt="">
+      <div id="vol" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        <div id="volBar"><div id="volFill"></div></div><span id="volNum">0</span>
+      </div>
+    </div>
 
     <div id="meta">
       <div id="label">NOW PLAYING</div>
       <h1 id="title"></h1>
-      <p id="artist"></p>
+      <div id="artistRow">
+        <p id="artist"></p>
+        <button id="like" class="ib" aria-label="Like" hidden>
+          <svg id="icoLike" viewBox="0 0 24 24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
+          <svg id="icoLiked" viewBox="0 0 24 24" hidden><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </button>
+      </div>
     </div>
 
     <div id="lyrics"><div id="lyricsInner"></div></div>
@@ -48,9 +65,11 @@
       <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
       <div id="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
       <div id="btns">
+        <button id="shuf" class="ib sec" aria-label="Shuffle"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
         <button id="prev" class="ib" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg></button>
         <button id="play" class="ib" aria-label="Play or pause"><svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg id="icoPause" viewBox="0 0 24 24" hidden><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
         <button id="next" class="ib" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+        <button id="rep" class="ib sec" aria-label="Repeat"><svg id="icoRep" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg><svg id="icoRep1" viewBox="0 0 24 24" hidden><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg></button>
       </div>
     </div>
   </section>
@@ -99,6 +118,30 @@
   </div>
 </div>
 <div id="exitZone" hidden></div>
+
+<!-- Devices -->
+<div id="devSheet" class="sheet" hidden>
+  <div class="card">
+    <h2>Play on</h2>
+    <div id="devList"></div>
+    <button id="devClose" class="link">Close</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="setSheet" class="sheet" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="row"><span>Lyrics size</span>
+      <div class="seg" id="cfgSize"><button data-v="0.85">S</button><button data-v="1">M</button><button data-v="1.2">L</button><button data-v="1.4">XL</button></div>
+    </div>
+    <label class="row"><span>Show the clock on the player</span><input type="checkbox" class="sw" id="cfgClock"></label>
+    <label class="row"><span>Keep the screen awake</span><input type="checkbox" class="sw" id="cfgAwake"></label>
+    <div class="row" id="rowLikes"><span>Likes need one more permission</span><button id="cfgReconnect" class="mini">Reconnect</button></div>
+    <button id="setClose" class="pill">Done</button>
+    <button id="cfgDisconnect" class="link">Disconnect Spotify</button>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>

@@ -29,11 +29,20 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 |---|---|---|---|
 | <img src="docs/portrait-lyrics.png" width="200"> | <img src="docs/portrait-cover.png" width="200"> | <img src="docs/setup.png" width="200"> | ![](docs/idle.png) |
 
+| Device switcher | Settings |
+|---|---|
+| ![](docs/devices.png) | <img src="docs/settings.png" width="200"> |
+
 *Screenshots use the built-in demo mode (fake songs), so no real artwork is shown.*
 
 ## Features
 
 - **Now playing**: cover, title, artist, progress bar, play / pause / next / previous / seek.
+- **Shuffle and repeat** (off / all / one) buttons beside the transport controls.
+- **Like**: a heart next to the artist adds the song to your Liked Songs, and shows when it already is.
+- **Volume**: swipe up or down on the cover (scroll wheel on desktop).
+- **Device switcher**: the speaker button in the top bar moves playback to any of your Spotify Connect devices.
+- **Settings**: lyric size (S to XL), show or hide the clock, and keep-screen-awake on or off. Saved in this browser.
 - **Synced lyrics** from [LRCLIB](https://lrclib.net) that scroll with the song, big and readable from across the room. Works with right-to-left languages. One lyrics button hides or shows them.
 - **Tap a lyric line to jump there**: Spotify seeks to that line of the song (needs Premium, like the other controls).
 - **Colours from the cover**: the background is a blurred wash of the current album art.
@@ -90,6 +99,8 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 | "INVALID_CLIENT: Invalid redirect URI" | The Redirect URI in the Spotify dashboard must match the site address exactly (trailing `/`, `https`, same capitalisation). |
 | Nothing shows after login | Press play in Spotify first. The web API only reports an active playback device. |
 | Buttons do nothing | Controlling playback needs Premium. |
+| The heart asks to reconnect | Likes need two extra Spotify permissions. Tap the heart again (or Settings -> Reconnect) and approve once. |
+| Volume swipe says the device sets its own volume | Some devices, such as iPhones running Spotify, don't let other apps change their volume. |
 | Screen turns off on iPhone | Screen Wake Lock needs iOS 16.4+, and works best from the home-screen app. |
 | Full screen button shows a guide on iPhone | Safari can't do real full screen. Use the home-screen app instead. |
 | No lyrics for a song | LRCLIB doesn't have every track. The cover layout is used instead. |
