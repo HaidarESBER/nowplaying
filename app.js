@@ -495,13 +495,28 @@
     el.tCur.textContent = fmt(el.seek.value * 1000);
     el.seek.style.setProperty('--p', (el.seek.value / el.seek.max) * 100 + '%');
   });
-  el.seek.addEventListener('change', async () => {
-    const ms = Math.round(el.seek.value * 1000);
+  // jump to a position (progress bar and tapped lyric lines share this)
+  async function seekTo(ms) {
+    ms = Math.max(0, Math.round(ms));
+    if (S.track && S.track.dur) ms = Math.min(ms, Math.max(0, S.track.dur - 500));
     S.anchor = { p: ms, t: Date.now() };
     S.dragging = false;
+    tick(true);                                   // progress bar + highlighted line update at once
     if (DEMO) return;
-    try { await api('PUT', '/me/player/seek?position_ms=' + ms); } catch (e) { /* ignore */ }
+    try { await api('PUT', '/me/player/seek?position_ms=' + ms); } catch (e) { toast('Could not jump (is Spotify playing?)'); }
     setTimeout(poll, 450);
+  }
+  el.seek.addEventListener('change', () => seekTo(el.seek.value * 1000));
+
+  // tap a lyric line to jump to it in the song
+  el.lyricsInner.addEventListener('click', (e) => {
+    const ln = e.target.closest('.ln');
+    if (!ln || !S.lines) return;
+    const i = Array.prototype.indexOf.call(el.lyricsInner.children, ln);
+    if (i < 0 || !S.lines[i]) return;
+    ln.classList.add('tapped');
+    setTimeout(() => ln.classList.remove('tapped'), 220);
+    seekTo(S.lines[i].t);
   });
 
   el.btnLyrics.addEventListener('click', () => {

@@ -34,6 +34,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 
 - **Now playing**: cover, title, artist, progress bar, play / pause / next / previous / seek.
 - **Synced lyrics** from [LRCLIB](https://lrclib.net) that scroll with the song, big and readable from across the room. Works with right-to-left languages. One lyrics button hides or shows them.
+- **Tap a lyric line to jump there**: Spotify seeks to that line of the song (needs Premium, like the other controls).
 - **Colours from the cover**: the background is a blurred wash of the current album art.
 - **Layouts for both orientations**, with or without lyrics.
 - **Always on**: Screen Wake Lock keeps the display awake, and the app never changes your brightness.

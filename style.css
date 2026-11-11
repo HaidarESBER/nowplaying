@@ -131,7 +131,10 @@ body.lyrics #lyrics { display: block; }
   opacity: .26; transform-origin: left center;
   transition: opacity .5s ease, transform .55s cubic-bezier(.22, .8, .3, 1);
   overflow-wrap: anywhere;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
 }
+.ln.tapped { opacity: 1 !important; }
+@media (hover: hover) { .ln:hover { opacity: .85; } .ln.act:hover { opacity: 1; } }
 .ln.rtl { margin-left: auto; transform-origin: right center; }
 .ln.d2 { opacity: .36; }
 .ln.d1 { opacity: .52; }
