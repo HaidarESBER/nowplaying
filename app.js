@@ -927,15 +927,16 @@
   const GENRE_RULES = [
     ['hiphop', /hip.?hop|\brap\b|trap|drill|grime|boom bap|crunk|phonk/],
     ['rock', /metal|rock|punk|grunge|hardcore|\bemo\b|garage/],
-    ['electronic', /\bedm\b|electro|house|techno|trance|dubstep|drum and bass|\bdnb\b|synthwave|big room|future bass|hardstyle|\bclub\b|\brave\b/],
+    ['electronic', /^dance$|dance\/electronic|\bedm\b|electro|house|techno|trance|dubstep|drum and bass|\bdnb\b|synthwave|big room|future bass|hardstyle|\bclub\b|\brave\b/],
     ['classical', /classical|orchestra|opera|baroque|piano|jazz|bebop|swing|big band|soundtrack|\bscore\b|cinematic/],
     ['chill', /lo-?fi|chill|ambient|dream|downtempo|sleep|shoegaze|new age|bedroom|meditation|\bstudy\b/],
     ['soul', /r&b|\brnb\b|soul|funk|motown|disco|quiet storm|gospel/],
-    ['country', /country|folk|bluegrass|americana|blues|singer-songwriter|acoustic|cowboy|western|\broots\b/],
+    ['country', /country|folk|bluegrass|americana|blues|singer.songwriter|acoustic|cowboy|western|\broots\b/],
     ['tropical', /reggae|dancehall|reggaeton|latin|salsa|bachata|afro|dembow|cumbia|tropical|samba|bossa|arab|\brai\b|ra\u00ef|khaleeji|mizrahi|amapiano/],
     ['pop', /pop|dance|teen|boy band|idol/],
+    ['rock', /alternative|indie rock|britpop/],                 // weak match: only when nothing more specific fits
   ];
-  const FAMS = GENRE_RULES.map((r) => r[0]);
+  const FAMS = GENRE_RULES.map((r) => r[0]).filter((v, i, a) => a.indexOf(v) === i);
   const FAM_NAMES = { hiphop: 'Hip-hop', rock: 'Rock', electronic: 'Electronic', classical: 'Classical & jazz', chill: 'Lo-fi & chill',
     soul: 'R&B & soul', country: 'Country & folk', tropical: 'Latin & reggae', pop: 'Pop' };
   const familyOf = (gs) => {
@@ -951,21 +952,121 @@
     FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
     setTimeout(() => centerLine(S.lineIdx, true), 60);             // the typeface changes line heights: re-centre
   }
+  // Genre detection: look the song up online first (Apple Music search, then MusicBrainz tags), and only if neither
+  // knows it fall back to the artist's Spotify genres. Slow is fine: the look appears when the answer arrives, and
+  // the result is cached in this browser so each song is looked up once.
+  const norm = (x) => String(x || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/\b(feat|ft|featuring)\b.*$/, '').replace(/ - .*$/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+  // tolerant name match: "Fairuz" ~ "Fairouz", "Beyonce" ~ "Beyoncé"
+  function lev(a, b) {
+    const m = a.length, n = b.length;
+    if (!m || !n) return Math.max(m, n);
+    let prev = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) {
+      const cur = [i];
+      for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[n];
+  }
+  const sameName = (a, b) => !!a && !!b && (a === b || a.includes(b) || b.includes(a) ||
+    (Math.min(a.length, b.length) >= 4 && 1 - lev(a, b) / Math.max(a.length, b.length) >= 0.78));
+
+  async function fetchJson(url, ms) {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), ms || 7000);
+    try {
+      const r = await fetch(url, { signal: ac.signal });
+      return r.ok ? await r.json() : null;
+    } finally { clearTimeout(to); }
+  }
+
+  // 1) Apple Music (iTunes Search): one genre per song. Only trust results whose artist matches.
+  async function genreFromItunes(names, title) {
+    const j = await fetchJson('https://itunes.apple.com/search?term=' + encodeURIComponent((names[0] + ' ' + title).slice(0, 120)) + '&entity=song&limit=10');
+    const res = (j && j.results) || [];
+    const want = names.map(norm).filter((n) => n.length > 1);
+    const t = norm(title);
+    const sameArtist = res.filter((r) => { const ra = norm(r.artistName); return ra && want.some((w) => sameName(ra, w)); });
+    const exact = sameArtist.find((r) => { const rt = norm(r.trackName); return rt === t || rt.startsWith(t) || t.startsWith(rt); });
+    const pick = exact || sameArtist[0];
+    return pick ? pick.primaryGenreName : null;
+  }
+
+  // 2) MusicBrainz: community tags of the artist ("thrash metal", "jazz rap"...). Needs an exact name match; max 1 request/s.
+  let mbLast = 0;
+  async function genreFromMusicBrainz(name) {
+    const wait = mbLast + 1100 - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    mbLast = Date.now();
+    const j = await fetchJson('https://musicbrainz.org/ws/2/artist/?query=' + encodeURIComponent('artist:"' + name.replace(/"/g, '') + '"') + '&fmt=json&limit=3', 9000);
+    const n = norm(name);
+    const hit = ((j && j.artists) || []).find((x) => (norm(x.name) === n || sameName(norm(x.name), n)) && (x.score || 0) >= 80);
+    if (!hit) return null;
+    const tags = (hit.tags || []).slice().sort((p, q) => q.count - p.count).slice(0, 8).map((x) => x.name);
+    return tags.length ? tags : null;
+  }
+
+  // 3) Spotify artist genres (last resort)
+  async function genreFromSpotify(artistId, why) {
+    if (!artistId || !S.token) return null;
+    let gs = null;
+    try { gs = JSON.parse(store.get('g_' + artistId) || 'null'); } catch (e) { gs = null; }
+    if (gs && gs.length) return gs;
+    const r = await api('GET', '/artists/' + artistId);
+    if (!r.ok) { why.push('Spotify artist lookup answered ' + r.status); return null; }
+    gs = (await r.json()).genres || [];
+    if (gs.length) store.set('g_' + artistId, JSON.stringify(gs)); else why.push('Spotify lists no genre for this artist');
+    return gs.length ? gs : null;
+  }
+
+  async function detectGenre(t) {
+    const names = String(t.artist || '').split(/,\s*/).filter(Boolean);
+    const key = 'gv2:' + norm(names[0]) + '|' + norm(t.title);
+    let c = null;
+    try { c = JSON.parse(store.get(key) || 'null'); } catch (e) { c = null; }
+    if (c && (c.fam || Date.now() - c.at < 30 * 60 * 1000)) return c;     // misses are retried after 30 minutes
+    const why = [];
+    const done = (fam, raw, src) => {
+      const r = { fam, raw, src, why: why.join('; '), at: Date.now() };
+      store.set(key, JSON.stringify(r));
+      return r;
+    };
+    try {
+      const g = await genreFromItunes(names, t.title);
+      if (g) { const f = familyOf([g]); if (f) return done(f, g, 'Apple Music'); why.push('Apple Music says “' + g + '”'); } else why.push('not on Apple Music');
+    } catch (e) { why.push('Apple Music unreachable'); }
+    try {
+      const tags = names[0] ? await genreFromMusicBrainz(names[0]) : null;
+      if (tags) { const f = familyOf(tags); if (f) return done(f, tags.slice(0, 3).join(', '), 'MusicBrainz'); why.push('MusicBrainz tags didn’t match a look'); } else why.push('no MusicBrainz tags');
+    } catch (e) { why.push('MusicBrainz unreachable'); }
+    try {
+      const gs = await genreFromSpotify(t.artistId, why);
+      if (gs) { const f = familyOf(gs); if (f) return done(f, gs.slice(0, 3).join(', '), 'Spotify'); why.push('Spotify genres didn’t match a look'); }
+    } catch (e) { why.push('Spotify lookup failed'); }
+    return done('', '', '');
+  }
+  if (DEMO) window.__npDetect = detectGenre;                          // for testing the lookup against the real services
+
+  function updateGenreInfo() { const g = $('genreInfo'); if (g) g.textContent = S.ginfo || 'Waiting for a song'; }
+
   async function loadGenre(t) {
     S.gfam = '';
-    if (t.genres) { S.gfam = familyOf(t.genres); applyGenre(); return; }       // demo songs carry their own genres
+    if (t.genres) { S.gfam = familyOf(t.genres); S.ginfo = (S.gfam ? FAM_NAMES[S.gfam] : 'No look') + ' · demo song'; applyGenre(); updateGenreInfo(); return; }
     applyGenre();
-    if (!t.artistId || DEMO) return;
-    let gs = null;
-    try { gs = JSON.parse(store.get('g_' + t.artistId) || 'null'); } catch (e) { gs = null; }
-    if (!gs) {
-      try {
-        const r = await api('GET', '/artists/' + t.artistId);
-        if (r.ok) { gs = (await r.json()).genres || []; store.set('g_' + t.artistId, JSON.stringify(gs)); }
-      } catch (e) { /* offline: default look */ }
-    }
-    if (gs && S.trackId === t.id) { S.gfam = familyOf(gs); applyGenre(); }
+    if (!cfg.genre) { S.ginfo = 'Genre animations are off'; updateGenreInfo(); return; }
+    S.ginfo = 'Looking up the genre…'; updateGenreInfo();
+    let r;
+    try { r = await detectGenre(t); } catch (e) { r = { fam: '', why: 'lookup failed' }; }
+    if (S.trackId !== t.id) return;                                  // skipped to another song meanwhile
+    S.gfam = r.fam;
+    S.ginfo = r.fam ? FAM_NAMES[r.fam] + ' · via ' + r.src + (r.raw ? ' (' + r.raw + ')' : '')
+                    : 'No genre found' + (r.why ? ' — ' + r.why : '');
+    applyGenre(); updateGenreInfo();
   }
+
   function cycleGenreLook() {                                      // G: preview every look (auto -> each family -> auto)
     const order = [undefined].concat(FAMS);
     const i = order.indexOf(S.gforce);
@@ -1181,7 +1282,7 @@
     setTimeout(() => centerLine(S.lineIdx, true), 80);           // line heights changed: re-centre the lyrics
   }
   function syncSettingsUI() {
-    $('cfgGenre').checked = cfg.genre;
+    $('cfgGenre').checked = cfg.genre; updateGenreInfo();
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
@@ -1194,7 +1295,7 @@
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
-  $('cfgGenre').addEventListener('change', (e) => { cfg.genre = e.target.checked; saveCfg(); applyGenre(); });
+  $('cfgGenre').addEventListener('change', (e) => { cfg.genre = e.target.checked; saveCfg(); applyGenre(); if (cfg.genre && S.track && !S.gfam) loadGenre(S.track); else updateGenreInfo(); });
   $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
   $('cfgStyle').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
