@@ -374,42 +374,8 @@ body {
 }
 
 /* ---- ambient layers behind everything ---- */
-#fx { position: fixed; inset: 0; overflow: hidden; pointer-events: none; display: none; }
-body[class*="gn-"] #fx { display: block; }
-body.fx-lite #fx { display: none !important; }
-#fx::before {                                   /* tiled pattern that drifts seamlessly */
-  content: ''; position: absolute; left: 0; right: 0; top: 0;
-  height: calc(100% + var(--fx-h, 240px));
-  background: var(--fx-img, none); background-size: var(--fx-w, 240px) var(--fx-h, 240px);
-  opacity: var(--fx-op, .6); will-change: transform;
-  animation: gn-drift var(--fx-speed, 30s) linear infinite var(--fx-dir, normal);
-}
-#fx::after {                                    /* big moving light: beams, rays, aurora, rings */
-  content: ''; position: absolute; inset: -30%;
-  background: var(--fx2, none); opacity: var(--fx2-op, .6); will-change: transform;
-  animation: var(--fx2-anim, none);
-}
-@keyframes gn-drift  { from { transform: translateY(0); } to { transform: translateY(calc(var(--fx-h, 240px) * -1)); } }
-@keyframes gn-beat   { from { opacity: .2; } to { opacity: .65; } }
-@keyframes gn-blink  { 0%, 100% { opacity: .25; } 50% { opacity: .9; } }
-@keyframes gn-spin   { to { transform: rotate(360deg); } }
-@keyframes gn-sweep  { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
-@keyframes gn-fan    { from { transform: rotate(-14deg) scale(1.1); } to { transform: rotate(14deg) scale(1.1); } }
-@keyframes gn-shaft  { from { transform: translateX(-60px); opacity: .25; } to { transform: translateX(60px); opacity: .7; } }
-@keyframes gn-aurora { from { transform: translate(-6%, 4%) scale(1) rotate(-4deg); } to { transform: translate(8%, -6%) scale(1.2) rotate(7deg); } }
-@keyframes gn-breathe { from { transform: scale(1); opacity: .35; } to { transform: scale(1.18); opacity: .85; } }
-@keyframes gn-ring   { 0% { transform: scale(.35); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
-@keyframes gn-burst  { from { transform: rotate(0) scale(1); opacity: .35; } 50% { opacity: .75; } to { transform: rotate(360deg) scale(1.15); opacity: .35; } }
 
 /* ---- a glow behind the cover, in the cover's own colour, pulsing ---- */
-#coverWrap { isolation: isolate; }
-#coverWrap::before {
-  content: ''; position: absolute; inset: -22%; z-index: -1; border-radius: 50%; opacity: 0; pointer-events: none;
-  background: radial-gradient(closest-side, var(--ca8), var(--cb5) 55%, transparent 75%);
-}
-body[class*="gn-"] #coverWrap::before { opacity: .7; animation: gn-covglow var(--pulse, 1.6s) ease-in-out infinite alternate; }
-body.fx-lite #coverWrap::before { display: none; }
-@keyframes gn-covglow { from { transform: scale(.9); opacity: .4; } to { transform: scale(1.08); opacity: .85; } }
 
 /* ---- shared: typeface on every line + title; the playing line gets colour, glow and one of 4 entrances ---- */
 body[class*="gn-"] .ln { position: relative; font-family: var(--gfont, inherit); }
@@ -418,7 +384,6 @@ body[class*="gn-"] .ln.act { color: var(--gcol, #fff); text-shadow: var(--gshado
 body[class*="gn-"] .ln.act[data-v="1"] { animation: var(--v1, var(--v0, none)); }
 body[class*="gn-"] .ln.act[data-v="2"] { animation: var(--v2, var(--v0, none)); }
 body[class*="gn-"] .ln.act[data-v="3"] { animation: var(--v3, var(--v0, none)); }
-body.paused #fx::before, body.paused #fx::after, body.paused .ln.act, body.paused #coverWrap::before { animation-play-state: paused; }
 
 /* =========================================================== HIP-HOP: stamps, slams, a comic burst and a bass pump */
 body.gn-hiphop {
@@ -429,12 +394,8 @@ body.gn-hiphop {
   --v1: gn-stamp .55s cubic-bezier(.2,1.2,.3,1) both, gn-pump .67s ease-in-out .55s infinite;
   --v2: gn-spray .6s cubic-bezier(.2,.9,.3,1) both, gn-pump .67s ease-in-out .6s infinite;
   --v3: gn-scratch .55s steps(7) both, gn-pump .67s ease-in-out .55s infinite;
-  --fx-img: radial-gradient(circle, var(--ca8) 1.5px, transparent 2.3px); --fx-w: 22px; --fx-h: 22px; --fx-speed: 40s;
-  --fx2: radial-gradient(circle at 50% 55%, var(--cb5), transparent 38%), repeating-conic-gradient(from 0deg at 50% 55%, var(--ca2) 0 6deg, transparent 6deg 18deg);
-  --fx2-anim: gn-burst 50s linear infinite; --fx2-op: .8;
 }
 body.gn-hiphop .ln { text-transform: uppercase; letter-spacing: .02em; }
-body.gn-hiphop #fx::before { animation: gn-drift 40s linear infinite, gn-beat .67s ease-in-out infinite alternate; }
 @keyframes gn-pump { 0%, 100% { transform: scale(var(--act)); } 50% { transform: scale(calc(var(--act) * 1.05)); } }
 @keyframes gn-slam  { 0% { transform: scale(calc(var(--act) * 1.8)) rotate(-5deg); opacity: 0; } 55% { transform: scale(calc(var(--act) * .92)) rotate(1.4deg); opacity: 1; } 100% { transform: scale(var(--act)) rotate(0); opacity: 1; } }
 @keyframes gn-stamp { 0% { transform: scale(calc(var(--act) * 3.4)); opacity: 0; filter: blur(12px); } 55% { transform: scale(calc(var(--act) * .9)); opacity: 1; filter: blur(0); } 70% { transform: scale(calc(var(--act) * 1.06)) translate(5px, -4px); } 85% { transform: scale(var(--act)) translate(-5px, 3px); } 100% { transform: scale(var(--act)); opacity: 1; } }
@@ -450,19 +411,7 @@ body.gn-rock {
   --v1: gn-textwait .8s both, gn-glow 1.2s ease-in-out .8s infinite alternate;
   --v2: gn-quake .6s ease-out both, gn-flicker 2.6s steps(1) .6s infinite, gn-glow 1.2s ease-in-out .6s infinite alternate;
   --v3: gn-bolt .7s steps(1) both, gn-flicker 2.6s steps(1) .7s infinite, gn-glow 1.2s ease-in-out .7s infinite alternate;
-  --fx-img:
-    radial-gradient(circle at 12% 80%, var(--ca8) 0 2px, transparent 3px),
-    radial-gradient(circle at 47% 30%, var(--cb8) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 78% 62%, var(--cc8) 0 2.5px, transparent 3.5px),
-    radial-gradient(circle at 31% 8%, var(--ca8) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 90% 18%, var(--cb8) 0 2px, transparent 3px);
-  --fx-w: 280px; --fx-h: 280px; --fx-speed: 8s; --fx-op: .95;
-  --fx2: conic-gradient(from 198deg at 14% -12%, transparent 0deg, var(--ca5) 7deg, transparent 15deg),
-         conic-gradient(from 162deg at 86% -12%, transparent 0deg, var(--cb5) 7deg, transparent 15deg),
-         conic-gradient(from 180deg at 50% -16%, transparent 0deg, var(--cc2) 6deg, transparent 13deg);
-  --fx2-anim: gn-sweep 6s ease-in-out infinite alternate; --fx2-op: .9;
 }
-body.gn-rock #fx { box-shadow: inset 0 -150px 190px -90px var(--ca5); }
 /* the cut: two copies of the line (halves) fly in from opposite sides and meet exactly where the real text takes over */
 body.gn-rock .ln.act[data-v="0"]::before, body.gn-rock .ln.act[data-v="0"]::after,
 body.gn-rock .ln.act[data-v="1"]::before, body.gn-rock .ln.act[data-v="1"]::after {
@@ -491,10 +440,6 @@ body.gn-electronic {
   --v1: gn-rgbslide .7s ease-out both, gn-chroma 1.6s ease-in-out .7s infinite alternate;
   --v2: gn-scan .8s steps(12) both, gn-chroma 1.6s ease-in-out .8s infinite alternate;
   --v3: gn-strobe .7s steps(1) both, gn-chroma 1.6s ease-in-out .7s infinite alternate;
-  --fx-img: linear-gradient(var(--ca5) 1px, transparent 1px), linear-gradient(90deg, var(--cb2) 1px, transparent 1px);
-  --fx-w: 44px; --fx-h: 44px; --fx-speed: 2.8s; --fx-op: .55;
-  --fx2: conic-gradient(from -34deg at 50% 112%, transparent 0 9deg, var(--cb5) 10deg, transparent 11deg 21deg, var(--ca5) 22deg, transparent 23deg 33deg, var(--cc5) 34deg, transparent 35deg 45deg, var(--ca5) 46deg, transparent 47deg 57deg, var(--cb5) 58deg, transparent 59deg);
-  --fx2-anim: gn-fan 5s ease-in-out infinite alternate; --fx2-op: .9;
 }
 body.gn-electronic .ln { text-transform: uppercase; letter-spacing: .05em; font-weight: 800; }
 @keyframes gn-glitch { 0% { transform: translateX(-16px) scale(var(--act)); clip-path: inset(0 0 62% 0); opacity: .4; } 33% { transform: translateX(13px) scale(var(--act)); clip-path: inset(42% 0 0 0); opacity: .9; } 66% { transform: translateX(-6px) scale(var(--act)); clip-path: inset(0 0 20% 0); } 100% { transform: translateX(0) scale(var(--act)); clip-path: inset(0); opacity: 1; } }
@@ -512,14 +457,6 @@ body.gn-classical {
   --v1: gn-curtain 1.2s cubic-bezier(.3,.8,.3,1) both, gn-gleam 4s ease-in-out 1.2s infinite alternate;
   --v2: gn-inkbleed 1.5s ease-out both, gn-gleam 4s ease-in-out 1.5s infinite alternate;
   --v3: gn-pagedrop 1.2s cubic-bezier(.3,1.3,.5,1) both, gn-gleam 4s ease-in-out 1.2s infinite alternate;
-  --fx-img:
-    radial-gradient(circle at 18% 22%, var(--ca8) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 62% 48%, var(--cb8) 0 1px, transparent 2px),
-    radial-gradient(circle at 84% 80%, var(--ca8) 0 2px, transparent 3px),
-    radial-gradient(circle at 36% 90%, var(--cc8) 0 1.2px, transparent 2.2px);
-  --fx-w: 300px; --fx-h: 300px; --fx-speed: 44s; --fx-op: .6;
-  --fx2: repeating-linear-gradient(105deg, transparent 0 70px, var(--ca2) 85px, transparent 105px 180px);
-  --fx2-anim: gn-shaft 9s ease-in-out infinite alternate; --fx2-op: .8;
 }
 body.gn-classical .ln { font-style: italic; font-weight: 600; }
 @keyframes gn-unfold { 0% { opacity: 0; letter-spacing: .14em; filter: blur(4px); transform: translateY(10px) scale(var(--act)); } 100% { opacity: 1; letter-spacing: .01em; filter: blur(0); transform: translateY(0) scale(var(--act)); } }
@@ -537,19 +474,12 @@ body.gn-chill {
   --v1: gn-rise 1.7s ease-out both, gn-float 7s ease-in-out 1.7s infinite;
   --v2: gn-ripple 1.8s ease-out both, gn-float 7s ease-in-out 1.8s infinite;
   --v3: gn-driftin 1.7s ease-out both, gn-float 7s ease-in-out 1.7s infinite;
-  --fx-img:
-    radial-gradient(circle at 20% 30%, var(--ca5), transparent 12%),
-    radial-gradient(circle at 70% 70%, var(--cb5), transparent 14%),
-    radial-gradient(circle at 85% 20%, var(--cc5), transparent 9%);
-  --fx-w: 420px; --fx-h: 420px; --fx-speed: 70s; --fx-op: .9;
-  --fx2: radial-gradient(ellipse 48% 32% at 30% 40%, var(--ca5), transparent 70%), radial-gradient(ellipse 44% 30% at 72% 62%, var(--cb5), transparent 70%), radial-gradient(ellipse 36% 26% at 55% 20%, var(--cc2), transparent 70%);
-  --fx2-anim: gn-aurora 20s ease-in-out infinite alternate; --fx2-op: .85;
 }
 body.gn-chill .ln { font-weight: 600; }
 @keyframes gn-dream { 0% { opacity: 0; filter: blur(12px); transform: scale(calc(var(--act) * .95)); } 100% { opacity: 1; filter: blur(0); transform: scale(var(--act)); } }
 @keyframes gn-rise { 0% { opacity: 0; filter: blur(9px); transform: translateY(34px) scale(var(--act)); } 100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(var(--act)); } }
-@keyframes gn-ripple { 0% { opacity: 0; filter: blur(8px) hue-rotate(60deg); transform: scale(calc(var(--act) * .82)); } 55% { opacity: 1; transform: scale(calc(var(--act) * 1.05)); } 100% { opacity: 1; filter: blur(0) hue-rotate(0); transform: scale(var(--act)); } }
 @keyframes gn-driftin { 0% { opacity: 0; filter: blur(10px); transform: translateX(-46px) scale(var(--act)); } 100% { opacity: 1; filter: blur(0); transform: translateX(0) scale(var(--act)); } }
+@keyframes gn-ripple { 0% { opacity: 0; filter: blur(8px) hue-rotate(60deg); transform: scale(calc(var(--act) * .82)); } 55% { opacity: 1; transform: scale(calc(var(--act) * 1.05)); } 100% { opacity: 1; filter: blur(0) hue-rotate(0); transform: scale(var(--act)); } }
 @keyframes gn-float { 0%, 100% { transform: translateY(0) scale(var(--act)); } 50% { transform: translateY(-7px) scale(var(--act)); } }
 
 /* =========================================================== R&B / SOUL: velvet slide, heartbeat, groove sway; sunset sweep */
@@ -561,10 +491,6 @@ body.gn-soul {
   --v1: gn-velvet .9s cubic-bezier(.2,.8,.3,1) both, gn-sway 4.2s ease-in-out .9s infinite;
   --v2: gn-heartbeat 1s ease-out both, gn-sway 4.2s ease-in-out 1s infinite;
   --v3: gn-silkrise .9s ease-out both, gn-sway 4.2s ease-in-out .9s infinite;
-  --fx-img: radial-gradient(circle at 25% 35%, var(--ca5), transparent 24%), radial-gradient(circle at 75% 75%, var(--cb5), transparent 26%);
-  --fx-w: 520px; --fx-h: 520px; --fx-speed: 60s; --fx-dir: reverse; --fx-op: .9;
-  --fx2: conic-gradient(from 0deg at 50% 125%, var(--ca2), transparent 22deg, var(--cb2) 48deg, transparent 72deg, var(--cc2) 98deg, transparent 122deg, var(--ca2) 150deg, transparent 180deg, var(--cb2) 215deg, transparent 250deg, var(--ca2) 300deg, transparent 340deg);
-  --fx2-anim: gn-spin 90s linear infinite; --fx2-op: .9;
 }
 body.gn-soul .ln { font-weight: 700; }
 @keyframes gn-fadewarm { 0% { opacity: 0; filter: saturate(2) brightness(1.4); } 100% { opacity: 1; filter: none; } }
@@ -582,14 +508,7 @@ body.gn-country {
   --v1: gn-typewriter 1.3s steps(26) both, gn-wobble 5s ease-in-out 1.3s infinite;
   --v2: gn-paperdrop .9s cubic-bezier(.3,1.4,.5,1) both, gn-wobble 5s ease-in-out .9s infinite;
   --v3: gn-inkrev 1.1s linear both, gn-wobble 5s ease-in-out 1.1s infinite;
-  --fx-img:
-    radial-gradient(circle at 15% 70%, var(--ca8) 0 2px, transparent 3.5px),
-    radial-gradient(circle at 52% 25%, var(--cb8) 0 1.6px, transparent 3px),
-    radial-gradient(circle at 80% 85%, var(--cc8) 0 2.2px, transparent 3.8px);
-  --fx-w: 320px; --fx-h: 320px; --fx-speed: 26s; --fx-op: .85;
-  --fx2: radial-gradient(ellipse 80% 55% at 50% 118%, var(--ca5), transparent 70%); --fx2-anim: gn-breathe 6s ease-in-out infinite alternate; --fx2-op: .9;
 }
-body.gn-country #fx::before { animation: gn-drift 26s linear infinite, gn-blink 5s ease-in-out infinite; }
 body.gn-country .ln { font-weight: 600; }
 body.gn-country .ln.rtl.act { animation-name: gn-ink-rtl, gn-wobble; }
 @keyframes gn-ink { from { clip-path: inset(-12% 100% -12% 0); } to { clip-path: inset(-12% -4% -12% 0); } }
@@ -608,9 +527,6 @@ body.gn-tropical {
   --v1: gn-flip .8s cubic-bezier(.3,1.3,.5,1) both, gn-shimmy 2.2s ease-in-out .8s infinite;
   --v2: gn-dropbounce .9s cubic-bezier(.3,1,.5,1) both, gn-shimmy 2.2s ease-in-out .9s infinite;
   --v3: gn-confpop .7s ease-out both, gn-shimmy 2.2s ease-in-out .7s infinite;
-  --fx-img: radial-gradient(circle at 20% 30%, var(--ca5), transparent 18%), radial-gradient(circle at 70% 20%, var(--cb5), transparent 16%), radial-gradient(circle at 55% 75%, var(--cc5), transparent 20%);
-  --fx-w: 400px; --fx-h: 400px; --fx-speed: 22s; --fx-op: .95;
-  --fx2: repeating-conic-gradient(from 0deg at 50% 105%, var(--ca2) 0 8deg, transparent 8deg 21deg); --fx2-anim: gn-spin 80s linear infinite; --fx2-op: .9;
 }
 body.gn-tropical .ln { font-weight: 800; }
 @keyframes gn-salsa { 0% { transform: scale(calc(var(--act) * .6)) rotate(-8deg); opacity: 0; } 60% { transform: scale(calc(var(--act) * 1.1)) rotate(2.5deg); opacity: 1; } 100% { transform: scale(var(--act)) rotate(0); opacity: 1; } }
@@ -628,15 +544,6 @@ body.gn-pop {
   --v1: gn-starspin .8s cubic-bezier(.3,1.3,.5,1) both, gn-candy 6s linear infinite;
   --v2: gn-zoombounce .7s cubic-bezier(.3,1.6,.5,1) both, gn-candy 6s linear infinite;
   --v3: gn-jelly .9s ease-out both, gn-candy 6s linear infinite;
-  --fx-img:
-    radial-gradient(circle at 15% 25%, var(--ca) 0 3px, transparent 4px),
-    radial-gradient(circle at 60% 15%, var(--cb) 0 2.5px, transparent 3.5px),
-    radial-gradient(circle at 85% 55%, var(--cc) 0 3px, transparent 4px),
-    radial-gradient(circle at 35% 70%, var(--cb) 0 2.5px, transparent 3.5px),
-    radial-gradient(circle at 72% 90%, var(--ca) 0 2px, transparent 3px);
-  --fx-w: 260px; --fx-h: 260px; --fx-speed: 12s; --fx-op: .8;
-  --fx2: radial-gradient(circle at 50% 55%, transparent 0 17%, var(--ca5) 18%, transparent 21% 36%, var(--cb5) 37%, transparent 40% 55%, var(--cc5) 56%, transparent 59%);
-  --fx2-anim: gn-ring 3.2s ease-out infinite; --fx2-op: .9;
 }
 body.gn-pop .ln { font-weight: 800; }
 @keyframes gn-bounce { 0% { transform: translateY(28px) scale(calc(var(--act) * .8)); opacity: 0; } 100% { transform: translateY(0) scale(var(--act)); opacity: 1; } }
@@ -646,10 +553,90 @@ body.gn-pop .ln { font-weight: 800; }
 @keyframes gn-candy { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  #fx, #coverWrap::before { display: none !important; }
   body[class*="gn-"] .ln.act, body[class*="gn-"] .ln.act::before, body[class*="gn-"] .ln.act::after { animation: none !important; }
 }
 
 /* settings: detected genre line */
 #genreInfo { display: block; margin-top: -4px; font-size: 12px; line-height: 1.4; color: rgba(255,255,255,.6); }
 #rowGenreInfo { padding-top: 0; border-top: 0; }
+
+/* =====================================================================================================
+   Line animations: pieces (clipped copies of the text) that fly in and lock together, plus word effects.
+   JS (fx engine in app.js) creates .sl pieces / .slash blades / .wd words inside the playing line.
+   ===================================================================================================== */
+/* after an engine effect, only the look's idle loop runs (so the CSS entrance doesn't replay) */
+body[class*="gn-"] .ln.act[data-v="x"] { animation: var(--vx, none); }
+body.gn-hiphop     { --vx: gn-pump .67s ease-in-out infinite; }
+body.gn-rock       { --vx: gn-glow 1.2s ease-in-out infinite alternate; }
+body.gn-electronic { --vx: gn-chroma 1.6s ease-in-out infinite alternate; }
+body.gn-classical  { --vx: gn-gleam 4s ease-in-out infinite alternate; }
+body.gn-chill      { --vx: gn-float 7s ease-in-out infinite; }
+body.gn-soul       { --vx: gn-sway 4.2s ease-in-out infinite; }
+body.gn-country    { --vx: gn-wobble 5s ease-in-out infinite; }
+body.gn-tropical   { --vx: gn-shimmy 2.2s ease-in-out infinite; }
+body.gn-pop        { --vx: gn-candy 6s linear infinite; }
+
+/* the real text waits (invisible) while the pieces assemble over it */
+body[class*="gn-"] .ln.act.fx-run { color: transparent !important; text-shadow: none !important; animation: none !important; }
+
+.sl {
+  position: absolute; inset: 0; margin: 0; pointer-events: none; will-change: transform;
+  color: var(--gcol, #fff); text-shadow: var(--gshadow, none);
+  clip-path: var(--cp, none);
+  animation: sl-in var(--dur, .8s) cubic-bezier(.2, .9, .2, 1) var(--d, 0s) both;
+}
+/* fly in from a random place, tinted with the cover's colours, and land exactly on the text */
+@keyframes sl-in {
+  0%   { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(var(--sc)); opacity: 0; color: var(--tint, #fff); }
+  18%  { opacity: 1; }
+  78%  { transform: translate(calc(var(--dx) * -.05), calc(var(--dy) * -.05)) rotate(0) scale(1); color: var(--tint, #fff); }
+  100% { transform: none; opacity: 1; color: var(--gcol, #fff); }
+}
+/* cuts: the pieces appear already separated, hold while the blade passes, then SNAP together with a flash */
+.sl.k { animation-name: sl-snap; animation-timing-function: linear; }
+@keyframes sl-snap {
+  0%   { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; color: var(--tint, #fff); }
+  18%  { opacity: 1; }
+  56%  { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); color: var(--tint, #fff); filter: none; }
+  72%  { transform: translate(calc(var(--dx) * -.12), calc(var(--dy) * -.12)); filter: brightness(2.6); }
+  86%  { transform: translate(calc(var(--dx) * .03), calc(var(--dy) * .03)); filter: brightness(1.5); }
+  100% { transform: none; filter: none; opacity: 1; color: var(--gcol, #fff); }
+}
+/* glitch bands: jitter sideways in steps, then lock */
+.sl.g { animation-name: sl-glitchb; animation-timing-function: steps(5); }
+@keyframes sl-glitchb {
+  0%   { transform: translateX(var(--dx)); opacity: 0; color: var(--tint, #fff); }
+  20%  { opacity: 1; }
+  40%  { transform: translateX(calc(var(--dx) * -.7)); }
+  60%  { transform: translateX(calc(var(--dx) * .4)); }
+  80%  { transform: translateX(calc(var(--dx) * -.15)); color: var(--tint, #fff); }
+  100% { transform: none; opacity: 1; color: var(--gcol, #fff); }
+}
+
+/* the blade: a bright line drawn across the text along the cut */
+.slash {
+  position: absolute; left: 0; height: 3px; margin-top: -1.5px; pointer-events: none; transform-origin: 0 50%;
+  background: linear-gradient(90deg, transparent, #fff 14%, var(--ca, #fff) 50%, #fff 86%, transparent);
+  box-shadow: 0 0 8px #fff, 0 0 22px var(--ca, #fff), 0 0 46px var(--cb, #fff);
+  animation: sl-slash var(--dur, 1s) ease-out var(--sd, .25s) both;
+}
+@keyframes sl-slash {
+  0%   { transform: rotate(var(--sa)) scaleX(0); opacity: 0; }
+  10%  { opacity: 1; }
+  50%  { transform: rotate(var(--sa)) scaleX(1); opacity: 1; }
+  100% { transform: rotate(var(--sa)) scaleX(1); opacity: 0; }
+}
+
+/* word effects: each word animates on its own, in order */
+.ln .wd { display: inline-block; }
+.ln.wfx-chop .wd  { animation: wd-chop .6s cubic-bezier(.2, 1.5, .4, 1) calc(var(--i) * .08s) both; }
+.ln.wfx-wave .wd  { animation: wd-wave .8s cubic-bezier(.3, 1.4, .5, 1) calc(var(--i) * .09s) both; }
+.ln.wfx-swing .wd { transform-origin: 50% 0; animation: wd-swing .9s cubic-bezier(.3, 1.3, .5, 1) calc(var(--i) * .1s) both; }
+.ln.wfx-pop .wd   { animation: wd-pop .55s cubic-bezier(.3, 1.8, .5, 1) calc(var(--i) * .07s) both; }
+@keyframes wd-chop  { 0% { transform: translateY(-130px) rotate(calc(var(--r) * 1deg)) scale(1.7); opacity: 0; filter: blur(4px); } 55% { transform: translateY(8px) rotate(0) scale(.92, .86); opacity: 1; filter: none; } 100% { transform: none; opacity: 1; } }
+@keyframes wd-wave  { 0% { transform: translateY(46px); opacity: 0; } 55% { transform: translateY(-14px); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes wd-swing { 0% { transform: perspective(500px) rotateX(-95deg); opacity: 0; } 60% { transform: perspective(500px) rotateX(18deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes wd-pop   { 0% { transform: scale(0) rotate(calc(var(--r) * 1deg)); opacity: 0; } 60% { transform: scale(1.35); opacity: 1; } 100% { transform: none; opacity: 1; } }
+
+body.paused .sl, body.paused .slash, body.paused .wd { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .sl, .slash, .wd { animation: none !important; } }

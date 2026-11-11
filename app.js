@@ -39,7 +39,7 @@
   };
 
   // ------------------------------------------------------------------ settings (this browser only)
-  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true, fx: 'full' };
+  const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true };
   try { Object.assign(cfg, JSON.parse(store.get('cfg') || '{}')); } catch (e) { /* defaults */ }
 
   // ------------------------------------------------------------------ state
@@ -484,7 +484,7 @@
       const d = Math.abs(i - idx);
       const n = nodes[i];
       n.classList.toggle('act', d === 0);
-      if (d === 0) n.dataset.v = String(nextVariant());
+      if (d === 0) startLineFx(n); else if (n._fx) clearFx(n);
       n.classList.toggle('d1', d === 1);
       n.classList.toggle('d2', d === 2);
       n.classList.toggle('nx', i === idx + 1);
@@ -925,7 +925,6 @@
   $('devClose').addEventListener('click', () => { el.devSheet.hidden = true; });
 
   // ------------------------------------------------------------------ colours of the cover -> three hues for the genre looks
-  function nextVariant() { S.vLast = ((S.vLast == null ? -1 : S.vLast) + 1 + Math.floor(Math.random() * 3)) % 4; return S.vLast; }   // 0-3, never the same twice in a row
 
   function paletteOf(url) {
     return new Promise((resolve) => {
@@ -982,6 +981,185 @@
   }
   if (DEMO) window.__npPalette = paletteOf;                            // for testing
 
+  // ------------------------------------------------------------------ line animations: sliced, shattered, torn, chopped...
+  // The playing line is drawn as several clipped copies ("pieces") that fly in and lock together exactly over the real
+  // text, or as individually animated words. Geometry (cut angles, shard shapes, offsets, timing) is random per line, and the
+  // pieces start in colours taken from the cover and turn into the text colour as they land. Clip-path pieces keep Arabic
+  // and other joined scripts intact.
+  const R = (a, b) => a + Math.random() * (b - a);
+  const sgn = () => (Math.random() < 0.5 ? -1 : 1);
+  const tint = () => ['var(--ca)', 'var(--cb)', 'var(--cc)'][Math.floor(Math.random() * 3)];
+  const poly = (pts) => 'polygon(' + pts.map((p) => p[0].toFixed(1) + '% ' + p[1].toFixed(1) + '%').join(',') + ')';
+  const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  const WORD_FX = { chop: 1, wave: 1, swing: 1, pop: 1 };
+  const FX_LABEL = { katana: 'Katana slash', xcut: 'X-cut', shatter: 'Shatter', tear: 'Tear', blinds: 'Blinds', zip: 'Zipper', glitch: 'Glitch bands',
+    doors: 'Split doors', chop: 'Word chop', wave: 'Word wave', swing: 'Word swing', pop: 'Word pop',
+    v0: 'Signature 1', v1: 'Signature 2', v2: 'Signature 3', v3: 'Signature 4' };
+  // each look draws from its own set (v0-v3 are the look's own CSS signature entrances)
+  const FX_POOL = {
+    hiphop:     ['v0', 'v1', 'v2', 'v3', 'chop', 'zip', 'katana', 'blinds'],
+    rock:       ['v0', 'v1', 'v2', 'v3', 'katana', 'xcut', 'shatter', 'tear', 'blinds'],
+    electronic: ['v0', 'v1', 'v2', 'v3', 'glitch', 'blinds', 'zip', 'shatter'],
+    classical:  ['v0', 'v1', 'v2', 'v3', 'doors', 'blinds', 'wave', 'swing'],
+    chill:      ['v0', 'v1', 'v2', 'v3', 'wave', 'swing', 'doors'],
+    soul:       ['v0', 'v1', 'v2', 'v3', 'wave', 'swing', 'pop'],
+    country:    ['v0', 'v1', 'v2', 'v3', 'tear', 'swing', 'pop'],
+    tropical:   ['v0', 'v1', 'v2', 'v3', 'pop', 'chop', 'shatter', 'wave'],
+    pop:        ['v0', 'v1', 'v2', 'v3', 'pop', 'chop', 'shatter', 'wave', 'zip'],
+  };
+  const activeFam = () => (cfg.genre ? (S.gforce !== undefined ? S.gforce : S.gfam) : '');
+
+  function clearFx(n) {
+    clearTimeout(n._fxT);
+    n.querySelectorAll('.sl, .slash').forEach((x) => x.remove());
+    n.classList.remove('fx-run', 'wfx-chop', 'wfx-wave', 'wfx-swing', 'wfx-pop');
+    if (n._wrapped) { n.textContent = n.dataset.t || n.textContent; n._wrapped = false; }
+    n._fx = false;
+  }
+
+  // geometry of one effect: pieces {cp, dx, dy, rot, sc, d, tint, cls}, optional slash lines, duration in seconds
+  function fxGeometry(kind, w, h) {
+    const pieces = [], slashes = [];
+    let dur = 0.9;
+    if (kind === 'katana') {
+      const y1 = R(26, 52), y2 = 100 - y1 + R(-10, 10);
+      const ang = Math.atan2(((y2 - y1) / 100) * h, w);
+      pieces.push({ cp: poly([[0, 0], [100, 0], [100, y2], [0, y1]]), dx: -R(80, 140), dy: -R(16, 30), rot: R(-3, 0), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      pieces.push({ cp: poly([[0, y1], [100, y2], [100, 100], [0, 100]]), dx: R(80, 140), dy: R(16, 30), rot: R(0, 3), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      slashes.push({ y: (y1 + y2) / 2, ang: (ang * 180) / Math.PI, len: Math.hypot(w, ((y2 - y1) / 100) * h), sd: 0.3 });
+      dur = 1.0;
+    } else if (kind === 'xcut') {
+      const cx = 50 + R(-10, 10), cy = 50 + R(-12, 12);
+      const a = (Math.atan2(h, w) * 180) / Math.PI, len = Math.hypot(w, h);
+      pieces.push({ cp: poly([[0, 0], [100, 0], [cx, cy]]), dx: R(-30, 30), dy: -R(26, 40), rot: R(-4, 4), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      pieces.push({ cp: poly([[100, 0], [100, 100], [cx, cy]]), dx: R(70, 120), dy: R(-14, 14), rot: R(-4, 4), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      pieces.push({ cp: poly([[100, 100], [0, 100], [cx, cy]]), dx: R(-30, 30), dy: R(26, 40), rot: R(-4, 4), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      pieces.push({ cp: poly([[0, 100], [0, 0], [cx, cy]]), dx: -R(70, 120), dy: R(-14, 14), rot: R(-4, 4), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      slashes.push({ y: 50, ang: a, len, sd: 0.22 }, { y: 50, ang: -a, len, sd: 0.34 });
+      dur = 1.05;
+    } else if (kind === 'tear') {
+      const n = 14, top = [];
+      for (let i = 0; i <= n; i++) { const y = 50 + (i % 2 ? -1 : 1) * R(3, 11); top.push([(i * 100) / n, y]); }
+      pieces.push({ cp: poly([[0, 0], [100, 0]].concat(top.slice().reverse())), dx: R(-14, 14), dy: -R(24, 40), rot: R(-3, 0), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      pieces.push({ cp: poly(top.concat([[100, 100], [0, 100]])), dx: R(-14, 14), dy: R(24, 40), rot: R(0, 3), sc: 1, d: 0, tint: tint(), cls: 'k' });
+      dur = 0.95;
+    } else if (kind === 'doors') {
+      pieces.push({ cp: 'inset(0 50% 0 0)', dx: -R(200, 280), dy: 0, rot: 0, sc: 1, d: 0, tint: tint() });
+      pieces.push({ cp: 'inset(0 0 0 50%)', dx: R(200, 280), dy: 0, rot: 0, sc: 1, d: 0, tint: tint() });
+      dur = 0.85;
+    } else if (kind === 'blinds') {
+      const n = 7;
+      for (let i = 0; i < n; i++) {
+        pieces.push({ cp: 'inset(' + Math.max(0, (i * 100) / n - 0.4).toFixed(2) + '% 0 ' + Math.max(0, 100 - ((i + 1) * 100) / n - 0.4).toFixed(2) + '% 0)',
+          dx: (i % 2 ? 1 : -1) * R(180, 300), dy: 0, rot: 0, sc: 1, d: i * 0.05, tint: tint() });
+      }
+      dur = 0.7;
+    } else if (kind === 'zip') {
+      const n = Math.max(8, Math.min(16, Math.round(w / 40)));
+      for (let i = 0; i < n; i++) {
+        pieces.push({ cp: 'inset(0 ' + Math.max(0, 100 - ((i + 1) * 100) / n - 0.3).toFixed(2) + '% 0 ' + Math.max(0, (i * 100) / n - 0.3).toFixed(2) + '%)',
+          dx: 0, dy: (i % 2 ? -1 : 1) * R(46, 90), rot: 0, sc: 1, d: i * 0.035, tint: tint() });
+      }
+      dur = 0.65;
+    } else if (kind === 'glitch') {
+      const cuts = [0];
+      for (let i = 0; i < 5; i++) cuts.push(R(8, 92));
+      cuts.sort((p, q) => p - q); cuts.push(100);
+      for (let i = 0; i < cuts.length - 1; i++) {
+        pieces.push({ cp: 'inset(' + cuts[i].toFixed(1) + '% 0 ' + (100 - cuts[i + 1]).toFixed(1) + '% 0)', dx: sgn() * R(30, 120), dy: 0, rot: 0, sc: 1, d: i * 0.03, tint: tint(), cls: 'g' });
+      }
+      dur = 0.65;
+    } else {                                                          // shatter: a jittered grid of jagged shards
+      const cols = Math.max(4, Math.min(9, Math.round(w / 70))), rows = 3;
+      const V = [];
+      for (let r = 0; r <= rows; r++) {
+        V.push([]);
+        for (let c = 0; c <= cols; c++) {
+          const edgeX = c === 0 || c === cols, edgeY = r === 0 || r === rows;
+          V[r].push([(c * 100) / cols + (edgeX ? 0 : R(-5, 5)), (r * 100) / rows + (edgeY ? 0 : R(-14, 14))]);
+        }
+      }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          pieces.push({ cp: poly([V[r][c], V[r][c + 1], V[r + 1][c + 1], V[r + 1][c]]), dx: R(-300, 300), dy: R(-200, 200), rot: R(-45, 45), sc: R(0.5, 1.8), d: R(0, 0.22), tint: tint() });
+        }
+      }
+      dur = 0.75;
+    }
+    return { pieces, slashes, dur };
+  }
+
+  function runFx(n, kind) {
+    const w = n.offsetWidth, h = n.offsetHeight, text = n.dataset.t || '';
+    if (!w || !h || !text) return;
+    n._fx = true;
+    if (WORD_FX[kind]) {                                              // words animate one after another
+      const toks = text.split(/(\s+)/);
+      n.textContent = '';
+      let i = 0;
+      toks.forEach((tk) => {
+        if (!tk || /^\s+$/.test(tk)) { if (tk) n.appendChild(document.createTextNode(tk)); return; }
+        const sp = document.createElement('span');
+        sp.className = 'wd'; sp.textContent = tk;
+        sp.style.setProperty('--i', i++); sp.style.setProperty('--r', R(-25, 25).toFixed(1));
+        n.appendChild(sp);
+      });
+      n._wrapped = true;
+      n.classList.add('wfx-' + kind);
+      n._fxT = setTimeout(() => clearFx(n), 600 + i * 110 + 900);
+      return;
+    }
+    const g = fxGeometry(kind, w, h);
+    n.classList.add('fx-run');                                        // the real text waits while the pieces assemble
+    let tail = 0;
+    g.pieces.forEach((p) => {
+      const s = document.createElement('span');
+      s.className = 'sl ' + (p.cls || '');
+      s.dir = 'auto';
+      s.textContent = text;
+      s.style.cssText = '--cp:' + p.cp + ';--dx:' + p.dx.toFixed(0) + 'px;--dy:' + p.dy.toFixed(0) + 'px;--rot:' + p.rot.toFixed(1) + 'deg;--sc:' + p.sc.toFixed(2) +
+        ';--d:' + p.d.toFixed(3) + 's;--dur:' + g.dur + 's;--tint:' + p.tint;
+      n.appendChild(s);
+      tail = Math.max(tail, p.d);
+    });
+    g.slashes.forEach((sl) => {                                       // the blade that "does" the cutting
+      const i = document.createElement('i');
+      i.className = 'slash';
+      i.style.cssText = 'top:' + sl.y.toFixed(1) + '%;width:' + sl.len.toFixed(0) + 'px;--sa:' + sl.ang.toFixed(2) + 'deg;--dur:' + g.dur + 's;--sd:' + sl.sd + 's';
+      n.appendChild(i);
+    });
+    n._fxT = setTimeout(() => clearFx(n), (g.dur + tail) * 1000 + 90);
+  }
+
+  // choose the entrance for a line that just became active (never the same twice in a row)
+  function startLineFx(n, forced) {
+    clearFx(n);
+    forced = forced || S.fxForce;
+    const fam = activeFam();
+    const pool = (FX_POOL[fam] || []).filter((t) => forced || !(wantsWords() && !/^v\d$/.test(t)));   // karaoke / word-by-word keep their own word timing
+    if (!fam || REDUCED || !pool.length) { n.dataset.v = '0'; return; }
+    let t = forced;
+    if (!t) { do { t = pool[Math.floor(Math.random() * pool.length)]; } while (t === S.fxLast && pool.length > 1); }
+    S.fxLast = t;
+    if (/^v\d$/.test(t)) { n.dataset.v = t.slice(1); return; }
+    n.dataset.v = 'x';
+    runFx(n, t);
+  }
+  const fxParam = new URLSearchParams(location.search).get('fx');   // ?fx=katana always uses that effect (preview / testing)
+  if (fxParam) S.fxForce = fxParam;
+  let fxCycle = -1;
+  function cycleFx() {                                              // X: replay the playing line with the next effect of this look
+    const fam = activeFam();
+    const act = el.lyricsInner.querySelector('.ln.act');
+    if (!fam || !act) { toast('Play a song with lyrics and a genre look first'); return; }
+    const pool = FX_POOL[fam];
+    fxCycle = (fxCycle + 1) % pool.length;
+    S.fxForce = undefined;
+    startLineFx(act, pool[fxCycle]);
+    toast(FX_LABEL[pool[fxCycle]] + '  (' + (fxCycle + 1) + '/' + pool.length + ')');
+  }
+
   // ------------------------------------------------------------------ genre looks
   // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
   // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
@@ -1011,7 +1189,6 @@
   function applyGenre() {
     const f = cfg.genre ? (S.gforce !== undefined ? S.gforce : S.gfam) : '';
     FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
-    document.body.classList.toggle('fx-lite', cfg.fx === 'lite');
     setTimeout(() => centerLine(S.lineIdx, true), 60);             // the typeface changes line heights: re-centre
   }
   // Genre detection: look the song up online first (Apple Music search, then MusicBrainz tags), and only if neither
@@ -1231,7 +1408,7 @@
   const SHORTCUTS = [
     [['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 5 s'], [['Shift', '← →'], 'Previous / next song'],
     [['N', 'B'], 'Next / previous song'], [['↑', '↓'], 'Volume up / down'], [['M'], 'Mute'],
-    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'],
+    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'], [['X'], 'Replay the line with another animation'],
     [['F'], 'Full screen'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
   ];
   (() => {
@@ -1295,6 +1472,7 @@
       case 't': case 'T': if (!el.btnLyrics.hidden) el.btnLyrics.click(); break;
       case 'y': case 'Y': cycleLyricStyle(); break;
       case 'g': case 'G': cycleGenreLook(); break;
+      case 'x': case 'X': cycleFx(); break;
       case 'f': case 'F': toggleFullscreen(); break;
       case 'p': case 'P': openLibrary('pl'); break;
       case 'd': case 'D': openLibrary('dev'); break;
@@ -1344,7 +1522,7 @@
     setTimeout(() => centerLine(S.lineIdx, true), 80);           // line heights changed: re-centre the lyrics
   }
   function syncSettingsUI() {
-    document.querySelectorAll('#cfgFx button').forEach((b) => b.classList.toggle('on', b.dataset.v === (cfg.genre ? cfg.fx : 'off')));
+    $('cfgGenre').checked = cfg.genre;
     updateGenreInfo();
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
@@ -1358,10 +1536,8 @@
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
-  $('cfgFx').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    cfg.genre = b.dataset.v !== 'off'; if (cfg.genre) cfg.fx = b.dataset.v;
-    saveCfg(); applyGenre(); syncSettingsUI();
+  $('cfgGenre').addEventListener('change', (e) => {
+    cfg.genre = e.target.checked; saveCfg(); applyGenre(); syncSettingsUI();
     if (cfg.genre && S.track && !S.gfam) loadGenre(S.track);
   });
   $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
