@@ -134,32 +134,46 @@ async function playResult(it) {
   srNote('Starting “' + it.name + '”…');
   const log = [];
   const dev = S.device && S.device.id ? S.device : null;
-  const q = (extra) => (extra ? '?' + extra : '');
   const body = it.kind === 'track' ? { uris: [it.uri], position_ms: 0 } : { context_uri: it.uri };
   let j = null;
 
-  // 1) the normal command (addressed to the known device only when it is idle)
-  let r = await api('PUT', '/me/player/play' + q(dev && !dev.is_active ? 'device_id=' + encodeURIComponent(dev.id) : ''), body).catch(() => null);
-  log.push('play: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
-  if (r && r.status === 403) { toast('This needs Spotify Premium'); $('searchSheet').hidden = false; }
-  if (r && r.status === 404 && dev) {                                   // no active device: wake the one we know, then ask again
-    const t = await api('PUT', '/me/player', { device_ids: [dev.id], play: true }).catch(() => null);
-    log.push('wake device: ' + (t ? t.status : 'no answer'));
-    await sleep(900);
-    r = await api('PUT', '/me/player/play', body).catch(() => null);
-    log.push('play again: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
-  } else if (r && r.status === 404) { openLibrary('dev'); $('searchSheet').hidden = true; toast('Pick a device to play on first'); return; }
-  if (r && r.ok) { await sleep(1300); j = await readPlayer(); }
-
-  // 2) fallback for songs: put it first in the queue and skip to it
-  if (!isPlayingIt(j, it) && it.kind === 'track') {
+  // songs: do what the Next button does. Queue the song, give Spotify a moment to register it, then press next
+  // (pressing next straight away skips before the queue knows about the song, and the player ends up idle)
+  const viaQueue = async () => {
     const qa = await api('POST', '/me/player/queue?uri=' + encodeURIComponent(it.uri)).catch(() => null);
     log.push('queue: ' + (qa ? qa.status + ' ' + (await errWhy(qa)) : 'no answer'));
-    if (qa && qa.ok) {
+    if (!qa || !qa.ok) return;
+    await sleep(1000);
+    for (let k = 0; k < 3 && !isPlayingIt(j, it); k++) {            // more than one press if other songs were queued before it
       const nx = await api('POST', '/me/player/next').catch(() => null);
-      log.push('next: ' + (nx ? nx.status : 'no answer'));
-      await sleep(1500); j = await readPlayer();
+      log.push('next: ' + (nx ? nx.status + ' ' + (await errWhy(nx)) : 'no answer'));
+      if (!nx || !nx.ok) break;
+      await sleep(1300); j = await readPlayer();
+      if (j && j.item && !j.is_playing && !isPlayingIt(j, it)) {    // skipped but paused
+        const rs = await api('PUT', '/me/player/play').catch(() => null); log.push('resume: ' + (rs ? rs.status : 'no answer'));
+        await sleep(700); j = await readPlayer();
+      }
     }
+    if (j && j.item && !j.is_playing && isPlayingIt({ ...j, is_playing: true }, it)) {   // the right song, but paused
+      const rs = await api('PUT', '/me/player/play').catch(() => null); log.push('resume: ' + (rs ? rs.status : 'no answer'));
+      await sleep(700); j = await readPlayer();
+    }
+  };
+  if (it.kind === 'track') await viaQueue();
+
+  // direct command (albums, artists, playlists; and songs when the queue route did not work)
+  if (!isPlayingIt(j, it)) {
+    let r = await api('PUT', '/me/player/play' + (dev && !dev.is_active ? '?device_id=' + encodeURIComponent(dev.id) : ''), body).catch(() => null);
+    log.push('play: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
+    if (r && r.status === 403) { toast('This needs Spotify Premium'); }
+    if (r && r.status === 404 && dev) {                                 // no active device: wake the one we know, then ask again
+      const t = await api('PUT', '/me/player', { device_ids: [dev.id], play: true }).catch(() => null);
+      log.push('wake device: ' + (t ? t.status : 'no answer'));
+      await sleep(900);
+      r = await api('PUT', '/me/player/play', body).catch(() => null);
+      log.push('play again: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
+    } else if (r && r.status === 404) { openLibrary('dev'); $('searchSheet').hidden = true; toast('Pick a device to play on first'); return; }
+    if (r && r.ok) { await sleep(1300); j = await readPlayer(); }
   }
 
   if (isPlayingIt(j, it)) {
