@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 20
       - name: Syntax check
-        run: node --check app.js
+        run: for f in js/*.js; do node --check "$f"; done
       - name: Shell script syntax
         run: bash -n setup.sh
       - name: Static tests
