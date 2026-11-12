@@ -561,8 +561,8 @@ body.gn-pop .ln { font-weight: 800; }
 }
 
 /* settings: detected genre line */
-#genreInfo, #lyrInfo { display: block; margin-top: -4px; font-size: 12px; line-height: 1.4; color: rgba(255,255,255,.6); }
-#rowGenreInfo { padding-top: 0; border-top: 0; }
+#genreInfo, #lyrInfo, #awakeInfo { display: block; margin-top: -4px; font-size: 12px; line-height: 1.4; color: rgba(255,255,255,.6); }
+#rowGenreInfo, #rowAwake { padding-top: 0; border-top: 0; }
 #rowLyr .mini { margin-left: 8px; }
 
 /* =====================================================================================================

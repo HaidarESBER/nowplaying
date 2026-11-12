@@ -117,15 +117,52 @@
   }
   setInterval(tickClock, 15000);
 
-  // ------------------------------------------------------------------ keep awake + night dim
-  let wake = null;
+  // ------------------------------------------------------------------ keep the screen awake
+  // 1) the Screen Wake Lock API where it works; 2) on iPhone / iPad (home-screen apps before iOS 18.4 accept the request but
+  // never hold it) and wherever the API is missing or refused, a 1.6 KB invisible looping video, which makes the OS think media
+  // is playing and keeps the screen on. The Settings row says which of the two is active.
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const SLEEP_MP4 = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAANDbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAm50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAEAAAABAAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHmbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABkW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAVFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAEAAQABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMiBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAK/+EAF2dCwArZBCbARAAAAwAEAAADACA8SJkgAQAFaMuDyyAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAALWAAAAAAAAAAYc3R0cwAAAAAAAAABAAAACAAAEAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAACAAAAAEAAAA0c3RzegAAAAAAAAAAAAAACAAAAo8AAAAKAAAACwAAAAoAAAAKAAAACgAAAAoAAAAKAAAAFHN0Y28AAAAAAAAAAQAAA3MAAABhdWR0YQAAAFltZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAACxpbHN0AAAAJKl0b28AAAAcZGF0YQAAAAEAAAAATGF2ZjYzLjEuMTAyAAAACGZyZWUAAALebWRhdAAAAnAGBf//bNxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjUgcjMyMjMgMDQ4MGNiMCAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjUgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDE6MHgxMTEgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz0yIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBrZXlpbnRfbWluPTQgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAAXZYiEBLyYoAA4oycnJ1111111111114AAAAAGQZo4CXhGAAAAB0GaVAJeEYAAAAAGQZpgEvCMAAAABkGagBLwjAAAAAZBmqAS8IwAAAAGQZrAEfCMAAAABkGa4BDwjA==';
+  let wake = null, sleepVideo = null;
+  S.awake = '';                                                       // '', 'lock', 'video', 'none'
+
+  function setAwakeStatus() {
+    S.awake = !cfg.awake ? '' : (wake ? 'lock' : (sleepVideo && !sleepVideo.paused ? 'video' : 'none'));
+    const e = $('awakeInfo');
+    if (!e) return;
+    e.textContent = !cfg.awake ? 'Off: the screen can turn off by itself.'
+      : S.awake === 'lock' ? 'On: using the Screen Wake Lock.'
+      : S.awake === 'video' ? 'On: using the invisible-video workaround' + (wake ? ' together with the Wake Lock.' : '.')
+      : 'Not holding the screen yet. Touch the screen once; if it still says this, set Auto-Lock to Never in your device settings' + (IOS ? ' (Settings > Display & Brightness > Auto-Lock).' : '.');
+  }
+  function startSleepVideo() {
+    if (!sleepVideo) {
+      sleepVideo = document.createElement('video');
+      sleepVideo.setAttribute('playsinline', ''); sleepVideo.setAttribute('webkit-playsinline', '');
+      sleepVideo.muted = true; sleepVideo.loop = true; sleepVideo.setAttribute('aria-hidden', 'true');
+      sleepVideo.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.02;pointer-events:none;z-index:-1';
+      sleepVideo.src = SLEEP_MP4;
+      sleepVideo.addEventListener('pause', setAwakeStatus); sleepVideo.addEventListener('playing', setAwakeStatus);
+      document.body.appendChild(sleepVideo);
+    }
+    if (sleepVideo.paused) { const p = sleepVideo.play(); if (p && p.catch) p.catch(() => { /* needs a touch first: lockScreen runs again on the next one */ }); }
+  }
+  function stopAwake() {
+    if (wake) { try { wake.release(); } catch (e) { /* ignore */ } wake = null; }
+    if (sleepVideo) sleepVideo.pause();
+    setAwakeStatus();
+  }
   async function lockScreen() {
+    if (!cfg.awake) { stopAwake(); return; }
     try {
-      if (cfg.awake && 'wakeLock' in navigator && !wake) {
+      if ('wakeLock' in navigator && !wake && document.visibilityState === 'visible') {
         wake = await navigator.wakeLock.request('screen');
-        wake.addEventListener('release', () => { wake = null; });
+        wake.addEventListener('release', () => { wake = null; setAwakeStatus(); });
       }
-    } catch (e) { /* not allowed right now */ }
+    } catch (e) { wake = null; }                                      // refused (battery saver, not visible, no support)
+    if (IOS || !wake) startSleepVideo();                              // iOS: always both; elsewhere only when the Wake Lock isn't held
+    else if (sleepVideo) sleepVideo.pause();
+    setAwakeStatus();
   }
 
   // (Re)request the wake lock on any touch: browsers release it when the page goes to the background.
@@ -1710,6 +1747,7 @@
     $('cfgGenre').checked = cfg.genre;
     updateGenreInfo(); updateLyrInfo();
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
+    setAwakeStatus();
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
     $('rowLikes').hidden = DEMO || (hasLib() && hasPl());
@@ -1718,7 +1756,7 @@
   el.btnSet.addEventListener('click', () => { syncSettingsUI(); el.setSheet.hidden = false; });
   $('setClose').addEventListener('click', () => { el.setSheet.hidden = true; });
   $('cfgClock').addEventListener('change', (e) => { cfg.clock = e.target.checked; saveCfg(); applyCfg(); });
-  $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
+  $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); lockScreen(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); renderAmbient(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
   $('cfgLyrNext').addEventListener('click', nextLyricVersion);

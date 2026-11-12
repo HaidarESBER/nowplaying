@@ -62,7 +62,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Tap a lyric line to jump there**: Spotify seeks to that line of the song (needs Premium, like the other controls).
 - **Colours from the cover**: the background is a blurred wash of the current album art.
 - **Layouts for both orientations**, with or without lyrics.
-- **Always on**: Screen Wake Lock keeps the display awake, and the app never changes your brightness.
+- **Always on**: the Screen Wake Lock keeps the display awake. On iPhone / iPad (where home-screen apps before iOS 18.4 accept the request but don't hold it) and wherever the API is missing, an invisible 1.6 KB looping video does the job instead; Settings shows which one is active. The app never changes your brightness.
 - **Full screen** (Settings -> Full screen; Android, desktop, iPad). On iPhone, install it to the home screen for a bar-free full screen.
 - **Idle mode**: a large clock when nothing is playing.
 - **Light on the network**: one Spotify request every ~3.5 s while playing, every 8 s when paused, none in the background.
