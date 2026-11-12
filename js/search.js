@@ -116,8 +116,15 @@ function renderResults() {
 async function playResult(it) {
   if (DEMO) { $('searchSheet').hidden = true; const i = DEMO_TRACKS.findIndex((d) => 'demo:' + d.id === it.uri); if (i >= 0) { demoIdx = i; demoLoad(i); } toast('Playing ' + it.name); return; }
   const body = it.kind === 'track' ? { uris: [it.uri] } : { context_uri: it.uri };
-  const dev = S.device && S.device.id ? '?device_id=' + encodeURIComponent(S.device.id) : '';   // target the device we know, even if it went idle
-  const r = await playerCall('PUT', '/me/player/play' + dev, body);
+  // an idle device (the phone app went to the background) ignores a play command: make it the active device first
+  if (S.device && S.device.id && !S.device.is_active) {
+    try { await api('PUT', '/me/player', { device_ids: [S.device.id], play: false }); await new Promise((ok) => setTimeout(ok, 700)); } catch (e) { /* the play call below reports the problem */ }
+  }
+  const r = await playerCall('PUT', '/me/player/play', body);
+  if (r && !r.ok && ![403, 404, 429].includes(r.status)) {
+    let why = ''; try { const j = await r.clone().json(); why = (j.error && (j.error.reason || j.error.message)) || ''; } catch (e) { /* no body */ }
+    toast('Spotify could not play that (' + r.status + (why ? ': ' + why : '') + ')');
+  }
   if (r && r.ok) {
     $('searchSheet').hidden = true;
     toast('Playing ' + it.name);
@@ -130,9 +137,10 @@ async function playResult(it) {
     S.anchor = { p: 0, t: Date.now() };
     renderPlayState();
     [700, 1800, 3500].forEach((ms) => setTimeout(poll, ms));         // Spotify takes a moment to report the new song
+    if (it.kind === 'track') setTimeout(() => {                      // say so if Spotify accepted the command but is not playing it
+      if (!S.playing || S.trackId !== it.id) toast('Spotify did not start it. Open Spotify on your device, then try again');
+    }, 4500);
   } else if (r && r.status === 404) {
     $('searchSheet').hidden = true; openLibrary('dev'); toast('Pick a device to play on first');
-  } else if (r && !r.ok && r.status !== 403 && r.status !== 429) {
-    toast('Spotify could not play that (' + r.status + ')');
   }
 }
