@@ -411,13 +411,16 @@ body[class*="gn-"] .ln.act[data-v="3"] { animation: var(--v3, var(--v0, none)); 
 body.gn-hiphop {
   --h1: 48; --h2: 285; --h3: 8; --pulse: .67s;
   --gfont: "NP Kufi", Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
-  --gcol: #fff; --gshadow: 3px 3px 0 var(--ca), 6px 6px 0 rgba(0,0,0,.55);
+  --gcol: #fff; --gshadow: 2px 2px 0 #000, -1px -1px 0 rgba(0,0,0,.9), 1px -1px 0 rgba(0,0,0,.9), -1px 1px 0 rgba(0,0,0,.9), 5px 5px 0 hsl(var(--h1) 85% 38%), 0 0 22px rgba(0,0,0,.6);
   --v0: gn-slam .45s cubic-bezier(.2,1.4,.4,1) both, gn-pump .67s ease-in-out .45s infinite;
   --v1: gn-stamp .55s cubic-bezier(.2,1.2,.3,1) both, gn-pump .67s ease-in-out .55s infinite;
   --v2: gn-spray .6s cubic-bezier(.2,.9,.3,1) both, gn-pump .67s ease-in-out .6s infinite;
   --v3: gn-scratch .55s steps(7) both, gn-pump .67s ease-in-out .55s infinite;
 }
-body.gn-hiphop .ln { text-transform: uppercase; letter-spacing: .02em; }
+body.gn-hiphop .ln { text-transform: uppercase; letter-spacing: .02em; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
+/* the cover's yellow must not wash out white text: darken the background wash and add a scrim behind the lyrics */
+body.gn-hiphop .bg { filter: blur(70px) saturate(1.3) brightness(.36); }
+body.gn-hiphop #lyrics { background: radial-gradient(ellipse at center, rgba(0,0,0,.38), rgba(0,0,0,0) 75%); }
 @keyframes gn-pump { 0%, 100% { transform: scale(var(--act)); } 50% { transform: scale(calc(var(--act) * 1.05)); } }
 @keyframes gn-slam  { 0% { transform: scale(calc(var(--act) * 1.8)) rotate(-5deg); opacity: 0; } 55% { transform: scale(calc(var(--act) * .92)) rotate(1.4deg); opacity: 1; } 100% { transform: scale(var(--act)) rotate(0); opacity: 1; } }
 @keyframes gn-stamp { 0% { transform: scale(calc(var(--act) * 3.4)); opacity: 0; filter: blur(12px); } 55% { transform: scale(calc(var(--act) * .9)); opacity: 1; filter: blur(0); } 70% { transform: scale(calc(var(--act) * 1.06)) translate(5px, -4px); } 85% { transform: scale(var(--act)) translate(-5px, 3px); } 100% { transform: scale(var(--act)); opacity: 1; } }
@@ -745,7 +748,7 @@ body.chrome-off #controls { transition-duration: .6s, 1s; }
    The clock follows the song: the look's typeface and colours (Arabic songs: Arabic numerals, set in the same style)
    ===================================================================================================== */
 body[class*="gn-"] #clock { font-family: var(--gfont, inherit); color: var(--gcol, rgba(255,255,255,.7)); text-shadow: 0 0 10px var(--ca5); letter-spacing: .06em; }
-body.gn-hiphop #clock { text-shadow: 2px 2px 0 var(--ca); letter-spacing: .04em; }
+body.gn-hiphop #clock { color: #fff; text-shadow: 1px 1px 0 #000, 0 0 10px rgba(0,0,0,.7); letter-spacing: .04em; }
 body.gn-rock #clock { text-shadow: 0 0 8px var(--ca8), 0 0 18px var(--cb5); }
 body.gn-electronic #clock { text-shadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 10px var(--cc8); letter-spacing: .1em; }
 body.gn-country #clock, body.gn-classical #clock, body.gn-arabic #clock { letter-spacing: .03em; }
@@ -756,3 +759,54 @@ body.gn-country #clock, body.gn-classical #clock, body.gn-arabic #clock { letter
   #topbar #tools { order: 1; margin-left: 0; }
   #clock { order: 2; transform-origin: right center; }
 }
+
+
+/* =====================================================================================================
+   Search sheet: a tall rounded panel from the top, big rows, a top-result card, skeleton loading
+   ===================================================================================================== */
+#searchSheet { align-items: flex-start; padding-top: max(var(--pad-t), 14px); }
+#srCard {
+  width: min(640px, 100%); height: min(86vh, 740px); max-height: 100%; padding: 16px 14px 8px; border-radius: 26px;
+  background: linear-gradient(180deg, rgba(38,38,44,.86), rgba(14,14,16,.92)); border-color: rgba(255,255,255,.12);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55); animation: srIn .3s cubic-bezier(.2,.9,.3,1) both; overflow: hidden;
+}
+@keyframes srIn { from { opacity: 0; transform: translateY(-14px) scale(.98); } to { opacity: 1; transform: none; } }
+#srBar { margin: 0 2px 12px; }
+#searchBox { padding: 15px 44px 15px 48px; font-size: 17px; background: rgba(255,255,255,.09); }
+#srIcon { left: 17px; }
+#srList { margin: 0 -6px; padding: 0 6px 6px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+.srH { margin: 18px 6px 6px; font-size: 13px; letter-spacing: .06em; }
+.dev.sr { margin-top: 2px; padding: 8px 10px; gap: 14px; border-radius: 16px; background: transparent; transition: background .15s; contain: content; }
+.dev.sr img { width: 52px; height: 52px; border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.dev.sr b { font-size: 16px; font-weight: 600; }
+.dev.sr small { margin-top: 3px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev.sr::after { content: ''; flex: none; margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: #1ed760 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2304210f' d='M8 5v14l11-7z'/%3E%3C/svg%3E") center / 20px no-repeat; opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s; }
+.dev.sr:hover, .dev.sr:focus-visible { background: rgba(255,255,255,.09); }
+.dev.sr:hover::after, .dev.sr:focus-visible::after { opacity: 1; transform: none; }
+@media (hover: none) { .dev.sr::after { opacity: .9; transform: none; width: 30px; height: 30px; } }
+.dev.sr.top { padding: 14px; gap: 16px; border-radius: 20px; background: linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.05)); }
+.dev.sr.top img { width: 92px; height: 92px; border-radius: 14px; }
+.dev.sr.top[data-kind="artist"] img { border-radius: 50%; }
+.dev.sr.top b { font-size: 21px; font-weight: 700; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.dev.sr.top small { font-size: 14px; }
+.dev.sr.top::after { opacity: 1; transform: none; width: 44px; height: 44px; background-size: 24px; }
+.chips { margin: 0 2px 4px; padding-bottom: 2px; }
+.chips button { padding: 8px 16px; font-size: 14px; transition: background .15s, color .15s; }
+.chips button:hover:not(.on) { background: rgba(255,255,255,.18); }
+#srClear:hover { background: rgba(255,255,255,.26); }
+.srRecent { padding: 13px 10px; border-radius: 12px; font-size: 16px; }
+.srRecent:hover { background: rgba(255,255,255,.08); }
+#srClose { margin: 6px auto 4px; padding: 6px 14px; }
+.srSk { display: flex; align-items: center; gap: 14px; padding: 8px 10px; }
+.srSk i { width: 52px; height: 52px; border-radius: 10px; flex: none; }
+.srSk div { flex: 1; }
+.srSk b, .srSk small { display: block; height: 11px; border-radius: 6px; }
+.srSk b { width: 55%; margin-bottom: 9px; } .srSk small { width: 35%; }
+.srSk i, .srSk b, .srSk small { background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.16) 45%, rgba(255,255,255,.07) 65%); background-size: 300% 100%; animation: srShimmer 1.2s linear infinite; }
+@keyframes srShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (max-width: 600px) {
+  #searchSheet { padding: 0; }
+  #srCard { width: 100%; height: 100%; max-height: none; border-radius: 0; border: 0; padding-top: max(var(--pad-t), 14px); padding-bottom: max(var(--pad-b), 10px); }
+}
+@media (max-height: 520px) { #srCard { height: 100%; border-radius: 18px; } .dev.sr.top img { width: 64px; height: 64px; } }
+@media (prefers-reduced-motion: reduce) { #srCard, .srSk i, .srSk b, .srSk small { animation: none; } }

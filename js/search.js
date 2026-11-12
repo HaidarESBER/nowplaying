@@ -22,6 +22,16 @@ function srNote(msg) {
   const p = document.createElement('p'); p.className = 'devNote'; p.textContent = msg;
   $('srList').appendChild(p);
 }
+function srSkeleton() {
+  $('srChips').hidden = true;
+  const box = $('srList'); box.textContent = '';
+  for (let k = 0; k < 6; k++) {
+    const r = document.createElement('div'); r.className = 'srSk';
+    r.innerHTML = '<i></i><div><b></b><small></small></div>';
+    box.appendChild(r);
+  }
+}
+const srCache = new Map();                                          // query -> { t, groups }: no second request for a query seen in the last 5 minutes
 function showSearchHome() {
   const q = $('searchBox').value.trim();
   $('srClear').hidden = !q;
@@ -64,7 +74,9 @@ async function runSearch(q) {
       .map((d) => ({ kind: 'track', id: d.id, name: d.title, sub: d.artist, album: d.album, dur: d.dur, img: demoCover(d.hue), art: demoCover(d.hue), uri: 'demo:' + d.id }));
     srGroups = [{ key: 'track', title: 'Songs', items: hits }]; rememberSearch(q); renderResults(); return;
   }
-  srNote('Searching…');
+  const hit = srCache.get(q.toLowerCase());
+  if (hit && Date.now() - hit.t < 300000) { srGroups = hit.groups; renderResults(); return; }
+  srSkeleton();
   try {
     // market=from_token: only songs playable in the user's country (without it Spotify lists songs the player then silently refuses)
     const base = '/search?type=track,artist,album,playlist&limit=8&q=' + encodeURIComponent(q);
@@ -86,6 +98,7 @@ async function runSearch(q) {
       { key: 'playlist', title: 'Playlists', items: ((j.playlists || {}).items || []).filter(Boolean).map((p) => ({ kind: 'playlist', name: p.name, sub: 'Playlist' + ((p.owner && p.owner.display_name) ? ' · ' + p.owner.display_name : ''), img: small(p), uri: mkUri('playlist', p) })) },
     ];
     rememberSearch(q);
+    srCache.set(q.toLowerCase(), { t: Date.now(), groups: srGroups });
     renderResults();
   } catch (e) { if (my === searchSeq) srNote('Could not reach Spotify.'); }
 }
@@ -101,11 +114,14 @@ function renderResults() {
     chips.appendChild(b);
   });
   const box = $('srList'); box.textContent = '';
+  let first = srFilter === 'all';                                   // the very first result gets a big card
   have.filter((g) => srFilter === 'all' || g.key === srFilter).forEach((g) => {
-    if (srFilter === 'all') { const h = document.createElement('div'); h.className = 'srH'; h.textContent = g.title; box.appendChild(h); }
+    if (srFilter === 'all' && !first) { const h = document.createElement('div'); h.className = 'srH'; h.textContent = g.title; box.appendChild(h); }
     g.items.forEach((it) => {
-      const b = document.createElement('button'); b.className = 'dev pl sr';
-      const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.src = it.img || '';
+      const b = document.createElement('button'); b.className = 'dev pl sr' + (first ? ' top' : '');
+      if (first) { const h = document.createElement('div'); h.className = 'srH'; h.textContent = 'Top result'; box.appendChild(h); }
+      b.dataset.kind = it.kind;
+      const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.decoding = 'async'; im.src = (first && it.art) || it.img || '';
       if (it.kind === 'artist') im.style.borderRadius = '50%';
       const l = document.createElement('div');
       const n = document.createElement('b'); n.textContent = it.name || 'Untitled';
@@ -113,6 +129,7 @@ function renderResults() {
       l.append(n, sm); b.append(im, l);
       b.addEventListener('click', () => playResult(it));
       box.appendChild(b);
+      if (first) { first = false; if (g.items.length > 1) { const h = document.createElement('div'); h.className = 'srH'; h.textContent = g.title; box.appendChild(h); } }
     });
   });
 }
