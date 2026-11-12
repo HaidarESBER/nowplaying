@@ -7,7 +7,7 @@ const SHORTCUTS = [
   [['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 5 s'], [['Shift', '← →'], 'Previous / next song'],
   [['N', 'B'], 'Next / previous song'], [['↑', '↓'], 'Volume up / down'], [['M'], 'Mute'],
   [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'], [['X'], 'Replay the line with another animation'], [['V'], 'Try another version of the lyrics'],
-  [['F'], 'Full screen'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
+  [['F'], 'Full screen'], [['/'], 'Search'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
 ];
 (() => {
   const list = $('helpList');
@@ -74,6 +74,7 @@ document.addEventListener('keydown', (e) => {
     case 'v': case 'V': nextLyricVersion(); break;
     case 'f': case 'F': toggleFullscreen(); break;
     case 'p': case 'P': openLibrary('pl'); break;
+    case '/': openLibrary('se'); break;
     case 'd': case 'D': openLibrary('dev'); break;
     case ',': el.btnSet.click(); break;
     default: handled = false;

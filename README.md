@@ -41,9 +41,10 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Shuffle and repeat** (off / all / one) buttons beside the transport controls.
 - **Like**: a heart next to the artist adds the song to your Liked Songs, and shows when it already is.
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
+- **Search**: the library button opens a **Search** tab (or press **/**): type a song, artist, album or playlist and tap a result to play it on your active device (Spotify Premium needed to start playback).
 - **Playlists**: the library button in the top bar lists your Spotify playlists; tap one to play it. The same sheet has a **Devices** tab to move playback to any of your Spotify Connect devices.
 - **Greets you by name**: the setup asks for your name once (skippable, editable in Settings), then a short "Good evening, name" appears every time you open the app, and on the idle screen.
-- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, V another lyrics version, G genre look preview, X replay line animation, F full screen, P playlists, D devices.
+- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, V another lyrics version, G genre look preview, X replay line animation, F full screen, / search, P playlists, D devices.
 - **Five lyric styles** (Settings): **Scroll** (all lines), **Karaoke** (words light up as they're sung), **One line**, **Two lines** (current and next) and **Word by word** (words appear one at a time). LRCLIB only has line timings, so word timing is estimated from word length.
 - **Genre looks with expressive line animations**: the song's genre (looked up online: Apple Music search first, then MusicBrainz community tags, then the artist's Spotify genres; Settings shows what was found and where from) picks one of ten looks, and the colours come from the **album cover**. Each look has its own typeface and a set of entrances; every new line picks one at random (never the same twice in a row). Besides each look's four signature entrances, a small animation engine builds **cut-up lines** with random geometry every time, so no two cuts are alike. The pieces fly in tinted with the cover's colours and turn white as they lock onto the text, and they keep Arabic and other joined scripts intact:
   - **Katana**: a bright blade sweeps across, the line is cut along a random diagonal and the halves snap back together with a flash. **X-cut**: two blades, four pieces.
@@ -138,7 +139,7 @@ Plain HTML, CSS and JS, no build step. The JavaScript is split into small classi
 | `js/controls.js` | transport, seek, setup screen, shuffle/repeat, like, volume, devices |
 | `js/animations.js` | cover colours, the line-animation engine, calm-mode phrase |
 | `js/genre.js` | genre rules, online lookup, applying the look |
-| `js/library.js` | playlists and devices sheet, greeting and name |
+| `js/library.js` | search, playlists and devices sheet, greeting and name |
 | `js/shortcuts.js` | desktop keyboard shortcuts |
 | `js/settings.js` | auto-hiding buttons, settings panel |
 | `js/boot.js` | demo mode and start-up |

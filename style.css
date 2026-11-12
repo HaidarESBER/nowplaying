@@ -344,6 +344,10 @@ body.standalone #rowFull { display: none; }
 .dev.pl > div { min-width: 0; }
 .dev.pl b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #devList .pill { margin-top: 14px; }
+#searchBox { width: 100%; margin: 10px 0 4px; padding: 12px 14px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: #fff; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; }
+#searchBox:focus { background: rgba(255,255,255,.15); box-shadow: 0 0 0 2px rgba(30,215,96,.6); }
+#searchBox::placeholder { color: rgba(255,255,255,.45); }
+.srH { margin: 14px 2px 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
 
 /* ---------- greeting (name) ---------- */
 #greet {
