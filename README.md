@@ -127,7 +127,23 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 
 <p align="center"><img src="docs/architecture.svg" alt="Architecture diagram: GitHub Pages serves static files to the browser, which talks to Spotify and LRCLIB" width="860"></p>
 
-Plain HTML, CSS and JS in three files (`index.html`, `style.css`, `app.js`), no build step.
+Plain HTML, CSS and JS, no build step. The JavaScript is split into small classic scripts in `js/` that share one global scope and are loaded in this order by `index.html`:
+
+| File | What it holds |
+|---|---|
+| `js/core.js` | constants, element map, storage, settings, state, helpers, clock, keep-awake, full screen |
+| `js/spotify.js` | Spotify login (PKCE), tokens, API calls, polling |
+| `js/render.js` | new track, cover and background, progress, play state |
+| `js/lyrics.js` | LRCLIB lookup and version picker, scrolling, word-by-word timing |
+| `js/controls.js` | transport, seek, setup screen, shuffle/repeat, like, volume, devices |
+| `js/animations.js` | cover colours, the line-animation engine, calm-mode phrase |
+| `js/genre.js` | genre rules, online lookup, applying the look |
+| `js/library.js` | playlists and devices sheet, greeting and name |
+| `js/shortcuts.js` | desktop keyboard shortcuts |
+| `js/settings.js` | auto-hiding buttons, settings panel |
+| `js/boot.js` | demo mode and start-up |
+
+Order matters: code in a file may only call, at load time, things defined in earlier files (anything inside a function can use any file).
 
 - **Auth**: Spotify Authorization Code with PKCE. Only your Client ID is stored, in `localStorage`; there is no secret to leak.
 - **State**: polls `GET /v1/me/player` and interpolates the progress locally between polls. Controls are `PUT/POST /v1/me/player/*`, with an optimistic play/pause toggle.
