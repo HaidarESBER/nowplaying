@@ -74,12 +74,13 @@ async function runSearch(q) {
     if (my !== searchSeq) return;
     const small = (o) => { const a = (o && o.images) || []; return a.length ? a[a.length - 1].url : ''; };
     const big = (o) => { const a = (o && o.images) || []; return a.length ? a[0].url : ''; };
+    const mkUri = (type, o) => o.uri || (o.id ? 'spotify:' + type + ':' + o.id : '');
     const names = (a) => (a || []).map((x) => x.name).join(', ');
     srGroups = [
-      { key: 'track', title: 'Songs', items: ((j.tracks || {}).items || []).filter(Boolean).map((t) => ({ kind: 'track', id: t.id, name: t.name, sub: names(t.artists), album: (t.album || {}).name || '', dur: t.duration_ms || 0, img: small(t.album), art: big(t.album), uri: t.uri, artistId: (t.artists && t.artists[0] && t.artists[0].id) || '' })) },
-      { key: 'artist', title: 'Artists', items: ((j.artists || {}).items || []).filter(Boolean).map((a) => ({ kind: 'artist', name: a.name, sub: 'Artist', img: small(a), uri: a.uri })) },
-      { key: 'album', title: 'Albums', items: ((j.albums || {}).items || []).filter(Boolean).map((a) => ({ kind: 'album', name: a.name, sub: 'Album · ' + names(a.artists), img: small(a), uri: a.uri })) },
-      { key: 'playlist', title: 'Playlists', items: ((j.playlists || {}).items || []).filter(Boolean).map((p) => ({ kind: 'playlist', name: p.name, sub: 'Playlist' + ((p.owner && p.owner.display_name) ? ' · ' + p.owner.display_name : ''), img: small(p), uri: p.uri })) },
+      { key: 'track', title: 'Songs', items: ((j.tracks || {}).items || []).filter(Boolean).map((t) => ({ kind: 'track', id: t.id, name: t.name, sub: names(t.artists), album: (t.album || {}).name || '', dur: t.duration_ms || 0, img: small(t.album), art: big(t.album), uri: mkUri('track', t), artistId: (t.artists && t.artists[0] && t.artists[0].id) || '' })) },
+      { key: 'artist', title: 'Artists', items: ((j.artists || {}).items || []).filter(Boolean).map((a) => ({ kind: 'artist', name: a.name, sub: 'Artist', img: small(a), uri: mkUri('artist', a) })) },
+      { key: 'album', title: 'Albums', items: ((j.albums || {}).items || []).filter(Boolean).map((a) => ({ kind: 'album', name: a.name, sub: 'Album · ' + names(a.artists), img: small(a), uri: mkUri('album', a) })) },
+      { key: 'playlist', title: 'Playlists', items: ((j.playlists || {}).items || []).filter(Boolean).map((p) => ({ kind: 'playlist', name: p.name, sub: 'Playlist' + ((p.owner && p.owner.display_name) ? ' · ' + p.owner.display_name : ''), img: small(p), uri: mkUri('playlist', p) })) },
     ];
     rememberSearch(q);
     renderResults();
@@ -115,6 +116,7 @@ function renderResults() {
 
 async function playResult(it) {
   if (DEMO) { $('searchSheet').hidden = true; const i = DEMO_TRACKS.findIndex((d) => 'demo:' + d.id === it.uri); if (i >= 0) { demoIdx = i; demoLoad(i); } toast('Playing ' + it.name); return; }
+  if (!it.uri) { toast('Spotify sent no link for this result'); return; }
   const body = it.kind === 'track' ? { uris: [it.uri] } : { context_uri: it.uri };
   // an idle device (the phone app went to the background) ignores a play command: make it the active device first
   if (S.device && S.device.id && !S.device.is_active) {
@@ -138,7 +140,7 @@ async function playResult(it) {
     renderPlayState();
     [700, 1800, 3500].forEach((ms) => setTimeout(poll, ms));         // Spotify takes a moment to report the new song
     if (it.kind === 'track') setTimeout(() => {                      // say so if Spotify accepted the command but is not playing it
-      if (!S.playing || S.trackId !== it.id) toast('Spotify did not start it. Open Spotify on your device, then try again');
+      if (!S.playing || S.trackId !== it.id) toast('Spotify did not start it (' + it.uri + '). Open Spotify on your device, then try again');
     }, 4500);
   } else if (r && r.status === 404) {
     $('searchSheet').hidden = true; openLibrary('dev'); toast('Pick a device to play on first');
