@@ -822,26 +822,30 @@ body.gn-montagem {
   --h1: 318; --h2: 178; --h3: 58; --pulse: .46s;
   --gfont: "NP Kufi", Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
   --gcol: #fff;
-  --gshadow: -3px 0 0 var(--cb), 3px 0 0 var(--ca), 0 3px 0 #000, 0 0 22px var(--ca8), 0 0 54px var(--cb5);
+  --gshadow: -3px 0 0 var(--cb), 3px 0 0 var(--ca), 0 2px 0 #000, 2px 2px 0 #000, -2px 2px 0 #000, 0 0 22px var(--ca8), 0 0 54px var(--cb5);
   --v0: mg-bang .5s cubic-bezier(.2,1.5,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
   --v1: mg-glitch .55s steps(1) both, mg-beat .46s ease-in-out .55s infinite;
   --v2: mg-zoom .5s cubic-bezier(.2,1.4,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
   --v3: mg-whip .5s cubic-bezier(.2,1.2,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
   --vx: mg-beat .46s ease-in-out infinite;
 }
-body.gn-montagem .ln { text-transform: uppercase; font-style: italic; letter-spacing: .01em; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+body.gn-montagem .ln { text-transform: uppercase; font-style: italic; letter-spacing: .01em; text-shadow: 0 2px 0 #000, 0 0 10px rgba(0,0,0,.9); }
+/* contrast: the playing line sits on a dark plate, and the lyrics column on a dark patch, so white text always wins over the colours */
+body.gn-montagem .ln.act { background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,.6) 10%, rgba(0,0,0,.6) 90%, rgba(0,0,0,0)); border-radius: 16px; }
+body.gn-montagem #lyrics { background: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 78%); }
 body.gn-montagem .ln.rtl { font-style: normal; }
-body.gn-montagem .bg { filter: blur(60px) saturate(2.2) brightness(.42); }
+body.gn-montagem .bg { filter: blur(60px) saturate(2.4) brightness(.34); }
 body.gn-montagem #title { text-transform: uppercase; font-style: italic; animation: mg-title .92s steps(1) infinite; }
 body.gn-montagem #clock { color: #fff; text-shadow: -2px 0 var(--cb), 2px 0 var(--ca); animation: mg-title .92s steps(1) infinite; }
 
 /* the line itself */
 @keyframes mg-beat {
-  0%, 100% { transform: scale(var(--act)) translate(0, 0) rotate(0); filter: none; }
-  6%  { transform: scale(calc(var(--act) * 1.13)) translate(-4px, 1px) rotate(-.7deg); filter: brightness(1.5); }
-  14% { transform: scale(calc(var(--act) * 1.05)) translate(4px, -1px) rotate(.7deg); filter: none; }
-  28% { transform: scale(var(--act)) translate(0, 0) rotate(0); }
-  55% { transform: scale(calc(var(--act) * 1.04)) translate(2px, 0) rotate(.3deg); }
+  0%, 100% { transform: scale(var(--act)) translate(0, 0) rotate(0); filter: none; text-shadow: var(--gshadow); }
+  6%  { transform: scale(calc(var(--act) * 1.17)) translate(-6px, 2px) rotate(-1deg); filter: brightness(1.45);
+        text-shadow: -10px 0 0 var(--cb), 10px 0 0 var(--ca), 0 2px 0 #000, 2px 2px 0 #000, -2px 2px 0 #000, 0 0 36px var(--ca8), 0 0 90px var(--cb5); }
+  14% { transform: scale(calc(var(--act) * 1.06)) translate(6px, -2px) rotate(1deg); filter: none; }
+  28% { transform: scale(var(--act)) translate(0, 0) rotate(0); text-shadow: var(--gshadow); }
+  55% { transform: scale(calc(var(--act) * 1.05)) translate(3px, 0) rotate(.4deg); }
   62% { transform: scale(var(--act)); }
 }
 @keyframes mg-bang {
@@ -878,9 +882,16 @@ body.gn-montagem #cover {
   animation: mg-cover var(--pulse) ease-in-out infinite;
   box-shadow: 0 0 0 3px var(--ca), 0 0 38px var(--ca8), 0 0 90px var(--cb5);
 }
+body.gn-montagem #coverWrap::before, body.gn-montagem #coverWrap::after {
+  content: ''; position: absolute; inset: 0; border-radius: 24px; pointer-events: none;
+}
+body.gn-montagem #coverWrap::before { border: 3px solid var(--ca); animation: mg-ring var(--pulse) ease-out infinite; }
+body.gn-montagem #coverWrap::after  { border: 4px solid var(--cb); animation: mg-ring-bar calc(var(--pulse) * 4) ease-out infinite; }
+@keyframes mg-ring { 0% { transform: scale(1); opacity: .85; } 100% { transform: scale(1.55); opacity: 0; } }
+@keyframes mg-ring-bar { 0% { transform: scale(1); opacity: 1; border-width: 8px; } 45% { opacity: 0; } 100% { transform: scale(2.8); opacity: 0; border-width: 1px; } }
 @keyframes mg-cover {
   0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(-5px 0 0 var(--cb5)) drop-shadow(5px 0 0 var(--ca5)); }
-  8% { transform: scale(1.075) rotate(-1.2deg); filter: drop-shadow(-9px 0 0 var(--cb8)) drop-shadow(9px 0 0 var(--ca8)) brightness(1.2); }
+  8% { transform: scale(1.1) rotate(-1.6deg); filter: drop-shadow(-9px 0 0 var(--cb8)) drop-shadow(9px 0 0 var(--ca8)) brightness(1.2); }
   18% { transform: scale(1.02) rotate(.8deg); }
   35% { transform: scale(1) rotate(0); }
 }
@@ -889,9 +900,9 @@ body.gn-montagem #cover {
 #scrim::before, #scrim::after { content: none; position: absolute; pointer-events: none; }
 body.gn-montagem #scrim::before {
   content: ''; inset: -50vmax; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
-  background: repeating-conic-gradient(from 0deg, transparent 0 9deg, var(--ca2) 9deg 18deg);
+  background: repeating-conic-gradient(from 0deg, hsl(var(--h1) 100% 60% / .2) 0 9deg, transparent 9deg 18deg, hsl(var(--h2) 100% 62% / .16) 18deg 27deg, transparent 27deg 36deg);
   -webkit-mask-image: radial-gradient(circle, transparent 8%, #000 45%, transparent 70%); mask-image: radial-gradient(circle, transparent 8%, #000 45%, transparent 70%);
-  mix-blend-mode: screen; animation: mg-spin 9s linear infinite;
+  mix-blend-mode: screen; animation: mg-spin 9s linear infinite, mg-throb var(--pulse) ease-out infinite;
 }
 body.gn-montagem #scrim::after {
   content: ''; inset: 0; width: 100%; height: 100%;
@@ -900,8 +911,9 @@ body.gn-montagem #scrim::after {
     repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
   mix-blend-mode: screen; opacity: 0; animation: mg-flash var(--pulse) ease-out infinite;
 }
-@keyframes mg-spin { to { transform: rotate(360deg); } }
-@keyframes mg-flash { 0% { opacity: .75; } 22% { opacity: .1; } 100% { opacity: 0; } }
+@keyframes mg-spin { to { rotate: 360deg; } }
+@keyframes mg-throb { 0% { scale: 1.18; } 30%, 100% { scale: 1; } }
+@keyframes mg-flash { 0% { opacity: .42; } 22% { opacity: .06; } 100% { opacity: 0; } }
 body.gn-montagem.mg-hit #lyrics { animation: mg-punch .38s ease-out; }
 body.gn-montagem.mg-hit #scrim { animation: mg-hit .38s ease-out; }
 @keyframes mg-punch { 0% { transform: scale(1.035) translate(-3px, 2px); } 35% { transform: scale(1) translate(3px, -2px); } 70% { transform: translate(-1px, 1px); } 100% { transform: none; } }
@@ -913,3 +925,15 @@ body.gn-montagem.paused #title, body.gn-montagem.paused #clock { animation-play-
 @media (prefers-reduced-motion: reduce) {
   body.gn-montagem #cover, body.gn-montagem #scrim::before, body.gn-montagem #scrim::after, body.gn-montagem #title, body.gn-montagem #clock { animation: none !important; }
 }
+
+.mgspark {
+  position: fixed; z-index: 3; pointer-events: none; width: 6px; height: 20px; border-radius: 2px; margin: -10px 0 0 -3px;
+  background: var(--c); box-shadow: 0 0 12px var(--c), 0 0 24px var(--c);
+  animation: mg-spark .8s cubic-bezier(.1,.8,.3,1) forwards;
+}
+@keyframes mg-spark {
+  0% { transform: translate(0, 0) rotate(var(--rot)) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) rotate(calc(var(--rot) + 200deg)) scale(.15); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .mgspark, body.gn-montagem #coverWrap::before, body.gn-montagem #coverWrap::after { display: none; } }
+body.gn-montagem.paused #coverWrap::before, body.gn-montagem.paused #coverWrap::after { animation-play-state: paused; }
