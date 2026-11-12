@@ -66,7 +66,10 @@ async function runSearch(q) {
   }
   srNote('Searching…');
   try {
-    const r = await api('GET', '/search?type=track,artist,album,playlist&limit=8&q=' + encodeURIComponent(q));
+    // market=from_token: only songs playable in the user's country (without it Spotify lists songs the player then silently refuses)
+    const base = '/search?type=track,artist,album,playlist&limit=8&q=' + encodeURIComponent(q);
+    let r = await api('GET', base + '&market=from_token');
+    if (!r.ok && r.status !== 429) r = await api('GET', base);
     if (my !== searchSeq) return;
     if (r.status === 429) { srNote('Spotify is busy, try again in a moment.'); return; }
     if (!r.ok) { srNote('Search failed (' + r.status + ').'); return; }
@@ -77,7 +80,7 @@ async function runSearch(q) {
     const mkUri = (type, o) => o.uri || (o.id ? 'spotify:' + type + ':' + o.id : '');
     const names = (a) => (a || []).map((x) => x.name).join(', ');
     srGroups = [
-      { key: 'track', title: 'Songs', items: ((j.tracks || {}).items || []).filter(Boolean).map((t) => ({ kind: 'track', id: t.id, name: t.name, sub: names(t.artists), album: (t.album || {}).name || '', dur: t.duration_ms || 0, img: small(t.album), art: big(t.album), uri: mkUri('track', t), artistId: (t.artists && t.artists[0] && t.artists[0].id) || '' })) },
+      { key: 'track', title: 'Songs', items: ((j.tracks || {}).items || []).filter((t) => t && t.is_playable !== false).map((t) => ({ kind: 'track', id: t.id, name: t.name, sub: names(t.artists), album: (t.album || {}).name || '', dur: t.duration_ms || 0, img: small(t.album), art: big(t.album), uri: mkUri('track', t), artistId: (t.artists && t.artists[0] && t.artists[0].id) || '' })) },
       { key: 'artist', title: 'Artists', items: ((j.artists || {}).items || []).filter(Boolean).map((a) => ({ kind: 'artist', name: a.name, sub: 'Artist', img: small(a), uri: mkUri('artist', a) })) },
       { key: 'album', title: 'Albums', items: ((j.albums || {}).items || []).filter(Boolean).map((a) => ({ kind: 'album', name: a.name, sub: 'Album · ' + names(a.artists), img: small(a), uri: mkUri('album', a) })) },
       { key: 'playlist', title: 'Playlists', items: ((j.playlists || {}).items || []).filter(Boolean).map((p) => ({ kind: 'playlist', name: p.name, sub: 'Playlist' + ((p.owner && p.owner.display_name) ? ' · ' + p.owner.display_name : ''), img: small(p), uri: mkUri('playlist', p) })) },
@@ -122,7 +125,7 @@ async function errWhy(r) {
 }
 // did Spotify really start what we asked for?
 const isPlayingIt = (j, it) => !!(j && j.is_playing && (it.kind === 'track'
-  ? (j.item && (j.item.id === it.id || (j.item.name === it.name && j.item.uri === it.uri)))
+  ? (j.item && (j.item.id === it.id || j.item.uri === it.uri || j.item.name === it.name))
   : (j.context && j.context.uri === it.uri)));
 
 async function playResult(it) {
