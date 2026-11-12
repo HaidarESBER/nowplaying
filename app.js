@@ -1217,6 +1217,7 @@
   // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
   // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
   const GENRE_RULES = [
+    ['arabic', /classic arab|arabic classical|arab classical|arab folk|arabic folk|\btarab\b|andalusian|maqam|\boud\b|qawwali/],   // traditional Arabic music: before "classical" and "pop" can claim it
     ['hiphop', /hip.?hop|\brap\b|trap|drill|grime|boom bap|crunk|phonk/],
     ['rock', /metal|rock|punk|grunge|hardcore|\bemo\b|garage/],
     ['electronic', /^dance$|dance\/electronic|\bedm\b|electro|house|techno|trance|dubstep|drum and bass|\bdnb\b|synthwave|big room|future bass|hardstyle|\bclub\b|\brave\b/],
@@ -1224,9 +1225,10 @@
     ['chill', /lo-?fi|chill|ambient|dream|downtempo|sleep|shoegaze|new age|bedroom|meditation|\bstudy\b/],
     ['soul', /r&b|\brnb\b|soul|funk|motown|disco|quiet storm|gospel/],
     ['country', /country|folk|bluegrass|americana|blues|singer.songwriter|acoustic|cowboy|western|\broots\b/],
-    ['arabic', /arab|khaleeji|\brai\b|ra\u00ef|mizrahi|oud|tarab|maghreb|levant|egypt|lebanese|syrian|iraqi|gulf|shaabi|chaabi|mahraganat|fairuz|fairouz/],
     ['tropical', /reggae|dancehall|reggaeton|latin|salsa|bachata|afro|dembow|cumbia|tropical|samba|bossa|amapiano/],
     ['pop', /pop|dance|teen|boy band|idol/],
+    // regional label only ("Arabic", "Khaleeji", "tarab"...): after the music genres, so Arabic pop is pop and Arabic rock is rock
+    ['arabic', /arab|khaleeji|\brai\b|ra\u00ef|mizrahi|oud|tarab|maghreb|levant|egypt|lebanese|syrian|iraqi|gulf|shaabi|chaabi|mahraganat|fairuz|fairouz/],
     ['rock', /alternative|indie rock|britpop/],                 // weak match: only when nothing more specific fits
   ];
   const FAMS = GENRE_RULES.map((r) => r[0]).filter((v, i, a) => a.indexOf(v) === i);
@@ -1343,22 +1345,35 @@
       store.set(key, JSON.stringify(r));
       return r;
     };
+    // A regional label ("Arabic") is only a last resort: a music genre from any source (rock, pop, hip-hop...) wins over it.
+    let regional = null;
+    const take = (list, src, shown) => {
+      const f = familyOf(list);
+      if (!f) return null;
+      if (f === 'arabic') { if (!regional) regional = { f, raw: shown, src }; return null; }
+      return done(f, shown, src);
+    };
     try {
       const gl = await genreFromItunes(names, t.title);
       if (gl) {
-        const hit = gl.filter((g) => !GENERIC_GENRE.test(g)).find((g) => familyOf([g]));
-        if (hit) return done(familyOf([hit]), hit, 'Apple Music');
-        why.push('Apple Music says “' + gl[0] + '”');
+        const usable = (g) => !GENERIC_GENRE.test(g) && familyOf([g]);
+        const own = gl[0], others = gl.slice(1).filter(usable);
+        if (usable(own) && familyOf([own]) !== 'arabic') return done(familyOf([own]), own, 'Apple Music');   // this very song is labelled with a music genre
+        if (usable(own)) regional = { f: 'arabic', raw: own, src: 'Apple Music' };
+        else if (others.some((g) => familyOf([g]) === 'arabic')) regional = { f: 'arabic', raw: others.find((g) => familyOf([g]) === 'arabic'), src: 'Apple Music (artist’s other songs)' };
+        else if (others.length) return done(familyOf([others[0]]), others[0], 'Apple Music (artist’s other songs)');
+        why.push('Apple Music says “' + own + '”');
       } else why.push('not on Apple Music');
     } catch (e) { why.push('Apple Music unreachable'); }
     try {
       const tags = names[0] ? await genreFromMusicBrainz(names[0]) : null;
-      if (tags) { const f = familyOf(tags); if (f) return done(f, tags.slice(0, 3).join(', '), 'MusicBrainz'); why.push('MusicBrainz tags didn’t match a look'); } else why.push('no MusicBrainz tags');
+      if (tags) { const r1 = take(tags, 'MusicBrainz', tags.slice(0, 3).join(', ')); if (r1) return r1; if (!regional) why.push('MusicBrainz tags didn’t match a look'); } else why.push('no MusicBrainz tags');
     } catch (e) { why.push('MusicBrainz unreachable'); }
     try {
       const gs = await genreFromSpotify(t.artistId, why);
-      if (gs) { const f = familyOf(gs); if (f) return done(f, gs.slice(0, 3).join(', '), 'Spotify'); why.push('Spotify genres didn’t match a look'); }
+      if (gs) { const r2 = take(gs, 'Spotify', gs.slice(0, 3).join(', ')); if (r2) return r2; if (!regional) why.push('Spotify genres didn’t match a look'); }
     } catch (e) { why.push('Spotify lookup failed'); }
+    if (regional) return done(regional.f, regional.raw, regional.src);
     return done('', '', '');
   }
   if (DEMO) window.__npDetect = detectGenre;                          // for testing the lookup against the real services
@@ -1650,7 +1665,7 @@
     { id: 'd1', title: 'Golden Hour Drive', artist: 'The Demo Band', album: 'Preview Sessions', hue: 22, dur: 214000, genres: ['dance pop', 'pop'],
       lines: ['(intro)', 'Headlights paint the evening gold', 'Windows down and nothing to hold', 'Every mile a little slower now', 'We forgot to ask where, forgot to ask how',
         'Sing it loud, the radio knows', 'Every word that the summer owes', 'Hold the moment, let it ring', 'This is the part where the chorus sings', '', 'Oh, we are golden, we are free', 'Nothing left to prove to me', 'Turn it up, the night is long', 'And the road is carrying the song'] },
-    { id: 'd2', title: 'ليل المدينة', artist: 'فرقة العرض', album: 'نسخة تجريبية', hue: 205, dur: 187000, genres: ['arabic pop', 'khaleeji'],
+    { id: 'd2', title: 'ليل المدينة', artist: 'فرقة العرض', album: 'نسخة تجريبية', hue: 205, dur: 187000, genres: ['arabic', 'tarab'],
       lines: ['(مقدمة)', 'الليل يمشي على أطراف المدينة', 'والنور يسهر فوق الشرفات', 'نحنا كنا هون وما سألنا حدا', 'والوقت يلعب بين الذكريات', 'غني معي هالأغنية الحلوة', 'كل كلمة بتعرف طريقها', 'ولا تسأل وين رايحين', 'المهم إنو الطريق جميل'] },
   ];
   let demoIdx = 0;
