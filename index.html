@@ -26,6 +26,9 @@
   <button id="btnLyrics" class="ib small" aria-label="Show or hide lyrics" hidden>
     <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
   </button>
+  <button id="btnSearch" class="ib small" aria-label="Search">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+  </button>
   <button id="btnDev" class="ib small" aria-label="Playlists and devices">
     <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
   </button>
@@ -128,11 +131,23 @@
 </div>
 <div id="exitZone" hidden></div>
 
+<!-- Search -->
+<div id="searchSheet" class="sheet" hidden>
+  <div class="card" id="srCard">
+    <div id="srBar"><svg id="srIcon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input id="searchBox" type="search" placeholder="Songs, artists, albums, playlists" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <button id="srClear" aria-label="Clear" hidden>&times;</button>
+    </div>
+    <div id="srChips" class="chips" hidden></div>
+    <div id="srList"></div>
+    <button id="srClose" class="link">Close</button>
+  </div>
+</div>
+
 <!-- Devices -->
 <div id="devSheet" class="sheet" hidden>
   <div class="card">
-    <div class="seg tabs" id="libTabs"><button data-v="se">Search</button><button data-v="pl">Playlists</button><button data-v="dev">Devices</button></div>
-    <input id="searchBox" type="search" placeholder="Songs, artists, albums, playlists" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" hidden>
+    <div class="seg tabs" id="libTabs"><button data-v="pl">Playlists</button><button data-v="dev">Devices</button></div>
     <div id="devList"></div>
     <button id="devClose" class="link">Close</button>
   </div>
@@ -181,6 +196,7 @@
 <script src="js/animations.js"></script>
 <script src="js/genre.js"></script>
 <script src="js/library.js"></script>
+<script src="js/search.js"></script>
 <script src="js/shortcuts.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/boot.js"></script>

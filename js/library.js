@@ -17,18 +17,12 @@ const DEMO_PLAYLISTS = [
 
 function syncTabs() {
   document.querySelectorAll('#libTabs button').forEach((b) => b.classList.toggle('on', b.dataset.v === libTab));
-  $('searchBox').hidden = libTab !== 'se';
 }
-function loadTab() {
-  if (libTab === 'dev') loadDevices();
-  else if (libTab === 'se') { const q = $('searchBox').value.trim(); if (q) runSearch(q); else note('Type a song, an artist, an album or a playlist.'); }
-  else loadPlaylists();
-}
+function loadTab() { if (libTab === 'dev') loadDevices(); else loadPlaylists(); }
 function openLibrary(tab) {
   if (tab) libTab = tab;
   el.devSheet.hidden = false;
   syncTabs(); loadTab();
-  if (libTab === 'se') setTimeout(() => $('searchBox').focus(), 60);
 }
 $('libTabs').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -92,73 +86,6 @@ async function playPlaylist(p) {
   if (DEMO) { demoControl('next'); toast('Playing ' + p.name); return; }
   const r = await playerCall('PUT', '/me/player/play', { context_uri: p.uri });
   if (r && r.ok) { toast('Playing ' + p.name); S.anchor = { p: 0, t: Date.now() }; S.playing = true; renderPlayState(); setTimeout(poll, 900); }
-  else if (r && r.status === 404) { openLibrary('dev'); toast('Pick a device to play on first'); }
-}
-
-// ------------------------------------------------------------------ search (Spotify catalogue: songs, artists, albums, playlists)
-let searchSeq = 0, searchTimer = 0;
-$('searchBox').addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  const q = $('searchBox').value.trim();
-  if (!q) { note('Type a song, an artist, an album or a playlist.'); return; }
-  searchTimer = setTimeout(() => runSearch(q), 350);               // wait for a pause in typing
-});
-$('searchBox').addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(searchTimer); const q = e.target.value.trim(); if (q) runSearch(q); e.target.blur(); } });
-
-async function runSearch(q) {
-  const my = ++searchSeq;                                          // ignore answers to older queries
-  if (DEMO) {
-    const n = q.toLowerCase();
-    const hits = DEMO_TRACKS.filter((d) => (d.title + ' ' + d.artist + ' ' + (d.album || '')).toLowerCase().includes(n))
-      .map((d) => ({ kind: 'track', name: d.title, sub: d.artist, img: demoCover(d.hue), uri: 'demo:' + d.id }));
-    renderResults([{ title: 'Songs', items: hits }]); return;
-  }
-  el.devList.textContent = 'Searching…';
-  try {
-    const r = await api('GET', '/search?type=track,artist,album,playlist&limit=8&q=' + encodeURIComponent(q));
-    if (my !== searchSeq) return;
-    if (r.status === 429) { note('Spotify is busy, try again in a moment.'); return; }
-    if (!r.ok) { note('Search failed (' + r.status + ').'); return; }
-    const j = await r.json();
-    const img = (o) => { const a = (o && o.images) || (o && o.album && o.album.images) || []; return a.length ? a[a.length - 1].url : ''; };
-    const names = (a) => (a || []).map((x) => x.name).join(', ');
-    const groups = [
-      { title: 'Songs', items: ((j.tracks || {}).items || []).filter(Boolean).map((t) => ({ kind: 'track', name: t.name, sub: names(t.artists), img: img(t), uri: t.uri })) },
-      { title: 'Artists', items: ((j.artists || {}).items || []).filter(Boolean).map((a) => ({ kind: 'artist', name: a.name, sub: 'Artist', img: img(a), uri: a.uri })) },
-      { title: 'Albums', items: ((j.albums || {}).items || []).filter(Boolean).map((a) => ({ kind: 'album', name: a.name, sub: names(a.artists), img: img(a), uri: a.uri })) },
-      { title: 'Playlists', items: ((j.playlists || {}).items || []).filter(Boolean).map((p) => ({ kind: 'playlist', name: p.name, sub: (p.owner && p.owner.display_name) || '', img: img(p), uri: p.uri })) },
-    ];
-    renderResults(groups);
-  } catch (e) { if (my === searchSeq) note('Could not reach Spotify.'); }
-}
-
-function renderResults(groups) {
-  el.devList.textContent = '';
-  if (!groups.some((g) => g.items.length)) { note('Nothing found. Try another spelling.'); return; }
-  groups.forEach((g) => {
-    if (!g.items.length) return;
-    const h = document.createElement('div'); h.className = 'srH'; h.textContent = g.title;
-    el.devList.appendChild(h);
-    g.items.forEach((it) => {
-      const b = document.createElement('button'); b.className = 'dev pl';
-      const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.src = it.img || '';
-      if (it.kind === 'artist') im.style.borderRadius = '50%';
-      const l = document.createElement('div');
-      const n = document.createElement('b'); n.textContent = it.name || 'Untitled';
-      const sm = document.createElement('small'); sm.textContent = it.sub;
-      l.append(n, sm); b.append(im, l);
-      b.addEventListener('click', () => playResult(it));
-      el.devList.appendChild(b);
-    });
-  });
-}
-
-async function playResult(it) {
-  el.devSheet.hidden = true;
-  if (DEMO) { const i = DEMO_TRACKS.findIndex((d) => 'demo:' + d.id === it.uri); if (i >= 0) { demoIdx = i; demoLoad(i); } toast('Playing ' + it.name); return; }
-  const body = it.kind === 'track' ? { uris: [it.uri] } : { context_uri: it.uri };
-  const r = await playerCall('PUT', '/me/player/play', body);
-  if (r && r.ok) { toast('Playing ' + it.name); S.anchor = { p: 0, t: Date.now() }; S.playing = true; renderPlayState(); setTimeout(poll, 900); }
   else if (r && r.status === 404) { openLibrary('dev'); toast('Pick a device to play on first'); }
 }
 

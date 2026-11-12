@@ -4,7 +4,7 @@
 
 // ------------------------------------------------------------------ auto-hide the buttons
 let hideT = 0, lastAct = 0, swallow = false;
-const anySheet = () => !el.devSheet.hidden || !el.setSheet.hidden || !sheet.hidden || !$('helpSheet').hidden;
+const anySheet = () => !el.devSheet.hidden || !$('searchSheet').hidden || !el.setSheet.hidden || !sheet.hidden || !$('helpSheet').hidden;
 function armHide() {
   clearTimeout(hideT);
   if (!cfg.autohide || S.screen !== 'player') return;
@@ -77,7 +77,7 @@ $('cfgSize').addEventListener('click', (e) => {
 $('cfgReconnect').addEventListener('click', () => startLogin(store.get('cid') || ''));
 $('cfgDisconnect').addEventListener('click', () => { el.setSheet.hidden = true; if (DEMO) return; logout(); });
 // tap outside a card closes it; Escape too
-[el.devSheet, el.setSheet, $('helpSheet')].forEach((sh) => sh.addEventListener('click', (e) => { if (e.target === sh) sh.hidden = true; }));
+[el.devSheet, $('searchSheet'), el.setSheet, $('helpSheet')].forEach((sh) => sh.addEventListener('click', (e) => { if (e.target === sh) sh.hidden = true; }));
 $('helpClose').addEventListener('click', () => { $('helpSheet').hidden = true; });
 applyCfg();
 renderModes();

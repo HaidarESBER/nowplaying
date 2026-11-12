@@ -41,7 +41,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Shuffle and repeat** (off / all / one) buttons beside the transport controls.
 - **Like**: a heart next to the artist adds the song to your Liked Songs, and shows when it already is.
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
-- **Search**: the library button opens a **Search** tab (or press **/**): type a song, artist, album or playlist and tap a result to play it on your active device (Spotify Premium needed to start playback).
+- **Search**: the magnifier button in the top bar (or press **/**) opens a search sheet with filter chips and recent searches: type a song, artist, album or playlist and tap a result to play it on your active device (Spotify Premium needed to start playback).
 - **Playlists**: the library button in the top bar lists your Spotify playlists; tap one to play it. The same sheet has a **Devices** tab to move playback to any of your Spotify Connect devices.
 - **Greets you by name**: the setup asks for your name once (skippable, editable in Settings), then a short "Good evening, name" appears every time you open the app, and on the idle screen.
 - **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, V another lyrics version, G genre look preview, X replay line animation, F full screen, / search, P playlists, D devices.
@@ -139,7 +139,8 @@ Plain HTML, CSS and JS, no build step. The JavaScript is split into small classi
 | `js/controls.js` | transport, seek, setup screen, shuffle/repeat, like, volume, devices |
 | `js/animations.js` | cover colours, the line-animation engine, calm-mode phrase |
 | `js/genre.js` | genre rules, online lookup, applying the look |
-| `js/library.js` | search, playlists and devices sheet, greeting and name |
+| `js/library.js` | playlists and devices sheet, greeting and name |
+| `js/search.js` | search sheet: Spotify search, results, play |
 | `js/shortcuts.js` | desktop keyboard shortcuts |
 | `js/settings.js` | auto-hiding buttons, settings panel |
 | `js/boot.js` | demo mode and start-up |

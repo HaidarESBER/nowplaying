@@ -344,10 +344,24 @@ body.standalone #rowFull { display: none; }
 .dev.pl > div { min-width: 0; }
 .dev.pl b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #devList .pill { margin-top: 14px; }
-#searchBox { width: 100%; margin: 10px 0 4px; padding: 12px 14px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: #fff; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; }
-#searchBox:focus { background: rgba(255,255,255,.15); box-shadow: 0 0 0 2px rgba(30,215,96,.6); }
+#srCard { display: flex; flex-direction: column; max-height: min(82vh, 640px); }
+#srBar { position: relative; display: flex; align-items: center; margin: 2px 0 10px; }
+#srIcon { position: absolute; left: 14px; width: 22px; height: 22px; fill: rgba(255,255,255,.55); pointer-events: none; }
+#searchBox { width: 100%; padding: 14px 40px 14px 44px; border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; transition: background .2s, box-shadow .2s; }
+#searchBox:focus { background: rgba(255,255,255,.15); box-shadow: 0 0 0 2px rgba(30,215,96,.65); }
 #searchBox::placeholder { color: rgba(255,255,255,.45); }
+#searchBox::-webkit-search-cancel-button { display: none; }
+#srClear { position: absolute; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+.chips { display: flex; gap: 8px; margin: 0 0 6px; overflow-x: auto; scrollbar-width: none; flex: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips button { flex: none; padding: 7px 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+.chips button.on { background: #1ed760; color: #04210f; }
+#srList { flex: 1; min-height: 120px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .srH { margin: 14px 2px 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.srRecent { display: block; width: 100%; margin-top: 4px; padding: 11px 12px; border: 0; border-radius: 10px; background: transparent; color: #fff; font-size: 15px; text-align: left; cursor: pointer; }
+.srRecent::before { content: '\21BB'; margin-right: 10px; color: rgba(255,255,255,.45); }
+.dev.sr:active, .srRecent:active { background: rgba(255,255,255,.16); }
+#srClose { flex: none; }
 
 /* ---------- greeting (name) ---------- */
 #greet {

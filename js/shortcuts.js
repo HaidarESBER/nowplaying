@@ -41,9 +41,9 @@ function toggleMute() {
   toast(v === 0 ? 'Muted' : 'Volume ' + v);
 }
 function closePanels() {
-  el.devSheet.hidden = true; el.setSheet.hidden = true; $('helpSheet').hidden = true; sheet.hidden = true;
+  el.devSheet.hidden = true; $('searchSheet').hidden = true; el.setSheet.hidden = true; $('helpSheet').hidden = true; sheet.hidden = true;
 }
-const anyPanel = () => !el.devSheet.hidden || !el.setSheet.hidden || !$('helpSheet').hidden || !sheet.hidden;
+const anyPanel = () => !el.devSheet.hidden || !$('searchSheet').hidden || !el.setSheet.hidden || !$('helpSheet').hidden || !sheet.hidden;
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -74,7 +74,7 @@ document.addEventListener('keydown', (e) => {
     case 'v': case 'V': nextLyricVersion(); break;
     case 'f': case 'F': toggleFullscreen(); break;
     case 'p': case 'P': openLibrary('pl'); break;
-    case '/': openLibrary('se'); break;
+    case '/': openSearch(); break;
     case 'd': case 'D': openLibrary('dev'); break;
     case ',': el.btnSet.click(); break;
     default: handled = false;
