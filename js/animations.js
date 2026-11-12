@@ -232,66 +232,11 @@ function montagemHit() {
   clearTimeout(montagemHit.t); montagemHit.t = setTimeout(() => b.classList.remove('mg-hit'), 420);
 }
 
-// every look throws its own particles from the edges of a new line (never across the text, never in the background)
-// mode: ends = out of both ends | rim = around the line | top / bottom = off that edge; dir: where they go
-const BURST = {
-  hiphop:     { kind: 'star',     n: 10, mode: 'rim',    dist: [14, 46],  dur: [.8, 1.1],  sz: [12, 22], cols: ['#ffd84a', '#fff', 'var(--ca)'] },
-  rock:       { kind: 'ember',    n: 18, mode: 'bottom', dist: [70, 190], dur: [1.1, 1.8], sz: [3, 6],   cols: ['#ff7a1a', '#ffb347', '#ff3b1a', '#ffd27a'], dir: 'up' },
-  electronic: { kind: 'pixel',    n: 18, mode: 'bottom', dist: [40, 130], dur: [.8, 1.3],  sz: [5, 9],   cols: ['var(--ca)', 'var(--cb)', 'var(--cc)', '#fff'], dir: 'down' },
-  classical:  { kind: 'mote',     n: 12, mode: 'top',    dist: [40, 110], dur: [1.8, 2.8], sz: [3, 5],   cols: ['#ffe9a8', '#fff6d6', 'hsl(var(--h1) 80% 75%)'], dir: 'up' },
-  chill:      { kind: 'bubble',   n: 9,  mode: 'bottom', dist: [60, 150], dur: [2.4, 3.6], sz: [8, 18],  cols: ['#fff'], dir: 'up' },
-  soul:       { kind: 'petal',    n: 10, mode: 'ends',   dist: [50, 150], dur: [2, 3],     sz: [8, 14],  cols: ['#ff8fa8', '#ffb3c1', 'var(--ca)', '#ffd6a5'], dir: 'down' },
-  country:    { kind: 'star',     n: 9,  mode: 'rim',    dist: [14, 40],  dur: [1, 1.5],   sz: [9, 16],  cols: ['#ffe27a', '#fff3c4', '#f4c542'] },
-  arabic:     { kind: 'star8',    n: 8,  mode: 'top',    dist: [50, 130], dur: [1.8, 2.6], sz: [10, 18], cols: ['#f2c14e', '#fff0b8', 'var(--cb)'], dir: 'up' },
-  tropical:   { kind: 'confetti', n: 22, mode: 'ends',   dist: [60, 190], dur: [1.2, 1.7], sz: [9, 15],  cols: ['#ff5d8f', '#ffd23f', '#3bceac', '#4ea8de', '#ff9f1c'], dir: 'burst' },
-  pop:        { kind: 'heart',    n: 14, mode: 'rim',    dist: [40, 150], dur: [1.1, 1.6], sz: [10, 18], cols: ['#ff5d9e', '#ffd23f', '#6ee7ff', '#c084fc', '#fff'], dir: 'burst' },
-};
-function lineBurst(fam) {
-  const cfg2 = BURST[fam];
-  const act = el.lyricsInner.querySelector('.ln.act');
-  if (!cfg2 || !act || S.screen !== 'player') return;
-  let box = document.getElementById('mgFx');
-  if (!box) { box = document.createElement('div'); box.id = 'mgFx'; document.body.appendChild(box); }
-  if (box.children.length > 40) return;
-  const r = act.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
-  const rnd = (a) => a[0] + Math.random() * (a[1] - a[0]);
-  for (let k = 0; k < cfg2.n; k++) {
-    let x, y, ang;
-    const side = k % 2 === 0;
-    if (cfg2.mode === 'ends') { x = side ? r.left + 4 : r.right - 4; y = r.top + r.height * (.2 + Math.random() * .6); ang = (side ? Math.PI : 0) + (Math.random() - .5) * 1.4; }
-    else if (cfg2.mode === 'top') { x = r.left + Math.random() * r.width; y = r.top - 2; ang = -Math.PI / 2 + (Math.random() - .5) * 1.2; }
-    else if (cfg2.mode === 'bottom') { x = r.left + Math.random() * r.width; y = r.bottom + 2; ang = Math.PI / 2 + (Math.random() - .5) * 1.2; }
-    else {                                                                              // rim: just outside the box, pointing away from it
-      const t = Math.random() * 2 * (r.width + r.height);
-      if (t < r.width) { x = r.left + t; y = r.top - 6; ang = -Math.PI / 2; }
-      else if (t < r.width + r.height) { x = r.right + 6; y = r.top + (t - r.width); ang = 0; }
-      else if (t < 2 * r.width + r.height) { x = r.right - (t - r.width - r.height); y = r.bottom + 6; ang = Math.PI / 2; }
-      else { x = r.left - 6; y = r.bottom - (t - 2 * r.width - r.height); ang = Math.PI; }
-      ang += (Math.random() - .5) * .9;
-    }
-    let d = rnd(cfg2.dist);
-    let tx = Math.cos(ang) * d, ty = Math.sin(ang) * d;
-    if (cfg2.dir === 'up') ty = -Math.abs(ty) - 10;
-    if (cfg2.dir === 'down') ty = Math.abs(ty) + 10;
-    if (cfg2.dir === 'burst') { ty = Math.sin(ang) * d - 30 - Math.random() * 40; }
-    const p = document.createElement('i'); p.className = 'fxp k-' + cfg2.kind;
-    p.style.left = Math.max(6, Math.min(vw - 6, x)) + 'px'; p.style.top = Math.max(6, Math.min(vh - 6, y)) + 'px';
-    p.style.setProperty('--tx', tx.toFixed(0) + 'px'); p.style.setProperty('--ty', ty.toFixed(0) + 'px');
-    p.style.setProperty('--rot', Math.round((Math.random() - .5) * 720) + 'deg');
-    p.style.setProperty('--sz', rnd(cfg2.sz).toFixed(1) + 'px'); p.style.setProperty('--dur', rnd(cfg2.dur).toFixed(2) + 's');
-    p.style.setProperty('--c', cfg2.cols[k % cfg2.cols.length]);
-    p.style.animationDelay = (Math.random() * .12).toFixed(2) + 's';
-    p.addEventListener('animationend', () => p.remove());
-    box.appendChild(p);
-  }
-}
-
 function startLineFx(n, forced) {
   clearFx(n);
   forced = forced || S.fxForce;
   const fam = activeFam();
   if (fam === 'montagem' && !REDUCED) montagemHit();
-  else if (fam && !REDUCED && BURST[fam]) requestAnimationFrame(() => lineBurst(fam));
   const pool = poolFor(fam, n, !!forced);
   if (!fam || REDUCED || !pool.length) { n.dataset.v = '0'; return; }
   let t = forced;

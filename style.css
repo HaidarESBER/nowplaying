@@ -916,8 +916,7 @@ body.gn-montagem.paused #title, body.gn-montagem.paused #clock { animation-play-
 
 /* =====================================================================================================
    Wow effects for every look, kept OFF the background: they live on the cover and on the line itself.
-   1) the cover gets a move of its own per genre; 2) every new line throws a short burst of particles from its
-   edges (never across the text), in a shape that fits the genre (JS: lineBurst in animations.js).
+   the cover gets a move of its own per genre.
    Frozen while paused, off with reduced motion. Montagem has its own set above.
    ===================================================================================================== */
 body[class*="gn-"]:not(.gn-montagem) #cover { position: relative; z-index: 1; }
@@ -954,25 +953,7 @@ body.gn-arabic #coverWrap::before, body.gn-arabic #coverWrap::after {
 body.gn-arabic #coverWrap::after { transform: rotate(45deg); border-color: hsl(var(--h2) 70% 60% / .7); animation-duration: 34s; animation-direction: reverse; }
 @keyframes cv-spin { to { rotate: 360deg; } }
 
-/* ---- particles thrown from the edges of every new line ---- */
-.fxp { position: fixed; z-index: 1; pointer-events: none; margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2); background: var(--c); width: var(--sz); height: var(--sz); animation: fxp-fly var(--dur) cubic-bezier(.15,.7,.3,1) forwards; }
-.fxp.k-star { clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 6px var(--c)); animation-name: fxp-twinkle; }
-.fxp.k-star8 { clip-path: polygon(50% 0, 62% 24%, 85% 15%, 76% 38%, 100% 50%, 76% 62%, 85% 85%, 62% 76%, 50% 100%, 38% 76%, 15% 85%, 24% 62%, 0 50%, 24% 38%, 15% 15%, 38% 24%); filter: drop-shadow(0 0 5px var(--c)); }
-.fxp.k-ember { border-radius: 50%; box-shadow: 0 0 10px var(--c), 0 0 20px var(--c); }
-.fxp.k-mote { border-radius: 50%; box-shadow: 0 0 8px var(--c); filter: blur(.4px); }
-.fxp.k-bubble { border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.75), rgba(255,255,255,.08) 55%); border: 1px solid rgba(255,255,255,.55); }
-.fxp.k-pixel { animation-name: fxp-fall; animation-timing-function: steps(7); box-shadow: 0 0 8px var(--c); }
-.fxp.k-petal { border-radius: 100% 0 100% 0; animation-name: fxp-drift; }
-.fxp.k-confetti { width: calc(var(--sz) * .6); height: var(--sz); animation-name: fxp-confetti; }
-.fxp.k-heart { clip-path: polygon(50% 100%, 6% 55%, 0 30%, 12% 8%, 32% 2%, 50% 22%, 68% 2%, 88% 8%, 100% 30%, 94% 55%); animation-name: fxp-confetti; filter: drop-shadow(0 0 5px var(--c)); }
-@keyframes fxp-fly { 0% { transform: translate(0, 0) rotate(0) scale(.4); opacity: 0; } 12% { opacity: 1; transform: translate(calc(var(--tx) * .1), calc(var(--ty) * .1)) scale(1); } 100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(.2); opacity: 0; } }
-@keyframes fxp-twinkle { 0% { transform: translate(0, 0) scale(0) rotate(0); opacity: 0; } 30% { transform: translate(calc(var(--tx) * .3), calc(var(--ty) * .3)) scale(1.25) rotate(40deg); opacity: 1; } 55% { transform: translate(calc(var(--tx) * .5), calc(var(--ty) * .5)) scale(.7) rotate(70deg); opacity: 1; } 75% { transform: translate(calc(var(--tx) * .7), calc(var(--ty) * .7)) scale(1) rotate(100deg); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0) rotate(140deg); opacity: 0; } }
-@keyframes fxp-fall { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)); opacity: 0; } }
-@keyframes fxp-drift { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 15% { opacity: .95; } 50% { transform: translate(calc(var(--tx) * .4), calc(var(--ty) * .5)) rotate(calc(var(--rot) * .5)); } 100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)); opacity: 0; } }
-@keyframes fxp-confetti { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 40% { transform: translate(calc(var(--tx) * .8), calc(var(--ty) * .8)) rotate(calc(var(--rot) * .5)); } 100% { transform: translate(calc(var(--tx) * 1.1), calc(var(--ty) + 170px)) rotate(var(--rot)); opacity: 0; } }
-
 body[class*="gn-"].paused #cover, body[class*="gn-"].paused #coverWrap::before, body[class*="gn-"].paused #coverWrap::after { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
   body[class*="gn-"] #cover, body.gn-arabic #coverWrap::before, body.gn-arabic #coverWrap::after { animation: none !important; }
-  .fxp { display: none; }
 }
