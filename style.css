@@ -676,41 +676,8 @@ body.gn-arabic .ln:not(.rtl).act[data-v="0"] { animation-name: ar-ink-l, ar-shim
 body .ln.rtl, body .ln.rtl .wd, body .ln.rtl .w, body .ln.rtl .sl { letter-spacing: 0 !important; text-transform: none !important; font-style: normal !important; }
 
 /* =====================================================================================================
-   Interlude (instrumental gaps, intros, outros) and ambient info (shown while the buttons are hidden)
+   Ambient info (shown while the buttons are hidden)
    ===================================================================================================== */
-/* ---- interlude: three breathing dots light up one after another (a countdown to the next line), with drifting notes ---- */
-#interlude {
-  position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%);
-  display: flex; align-items: center; justify-content: center; gap: clamp(16px, 3.4vw, 30px);
-  opacity: 0; pointer-events: none; transition: opacity .7s ease;
-}
-#lyrics.resting #interlude { opacity: 1; }
-#lyrics.resting .ln { opacity: .1 !important; }
-#interlude i {
-  position: relative; display: block; width: clamp(14px, 3.4vw, 26px); height: clamp(14px, 3.4vw, 26px); border-radius: 50%;
-  background: rgba(255,255,255,.16);
-}
-#interlude i:nth-child(1) { --dot: var(--ca); }
-#interlude i:nth-child(2) { --dot: var(--cb); }
-#interlude i:nth-child(3) { --dot: var(--cc); }
-#interlude.go i {
-  animation: il-breathe 1.9s ease-in-out infinite, il-lit calc(var(--tot, 6000ms) / 3) linear both;
-  animation-delay: calc(var(--k) * .25s), calc(var(--tot, 6000ms) * var(--k) / 3 - var(--el, 0ms));
-}
-#interlude.go i::after {                         /* a ring that ripples out of each dot */
-  content: ''; position: absolute; inset: -55%; border-radius: 50%; border: 2px solid var(--dot); opacity: 0;
-  animation: il-ring 1.9s ease-out infinite; animation-delay: calc(var(--k) * .25s);
-}
-#interlude .nt { position: absolute; font-size: clamp(18px, 3.4vw, 28px); color: var(--ca); opacity: 0; text-shadow: 0 0 14px var(--ca8); }
-#interlude.go .nt { animation: il-note 3.6s ease-out infinite; }
-#interlude .n1 { left: 12%; top: -150%; } #interlude .n2 { right: 10%; top: -190%; animation-delay: 1.4s; color: var(--cb); } #interlude .n3 { left: 46%; top: -240%; animation-delay: 2.5s; color: var(--cc); }
-@keyframes il-breathe { 0%, 100% { transform: scale(.78); } 50% { transform: scale(1.22); } }
-@keyframes il-lit { from { background: rgba(255,255,255,.16); box-shadow: 0 0 0 transparent; } to { background: var(--dot); box-shadow: 0 0 22px var(--dot), 0 0 44px var(--dot); } }
-@keyframes il-ring { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.7); opacity: 0; } }
-@keyframes il-note { 0% { transform: translateY(40px) rotate(-12deg) scale(.7); opacity: 0; } 25% { opacity: .9; } 100% { transform: translateY(-60px) rotate(14deg) scale(1.1); opacity: 0; } }
-body.paused #interlude i, body.paused #interlude i::after, body.paused #interlude .nt { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { #interlude.go i, #interlude.go i::after, #interlude.go .nt { animation: none !important; } }
-
 /* ---- ambient info: while the buttons are hidden, the top of the screen shows who you are and what's going on ---- */
 #ambient {
   position: fixed; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .9s ease;

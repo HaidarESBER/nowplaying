@@ -374,7 +374,6 @@
       }
     }
     updateLyricLine(p);
-    updateInterlude(p);
   }
   setInterval(() => tick(false), 500);
 
@@ -450,7 +449,6 @@
       const has = !!(S.lines && S.lines.length);      // read the latest state when the fade ends
       const want = has && S.showLyrics;
       leaveBrowse();
-      resetInterlude();
       W = null;
       el.lyricsInner.textContent = '';
       if (has) {
@@ -1186,41 +1184,6 @@
     startLineFx(act, pool[fxCycle]);
     toast(FX_LABEL[pool[fxCycle]] + '  (' + (fxCycle + 1) + '/' + pool.length + ')');
   }
-
-  // ------------------------------------------------------------------ interlude: something nice for instrumental gaps
-  // Intros, instrumental breaks, empty lines and outros get three breathing dots that light up one after another
-  // (a countdown to the next line) in the cover's colours, with notes drifting up. The lyrics dim while it shows.
-  const IL = { on: false, end: 0 };
-  function interludeAt(p) {
-    const L = S.lines;
-    if (!L || !L.length || !S.track) return null;
-    const dur = S.track.dur || 0, idx = S.lineIdx;
-    if (idx < 0) { const end = L[0].t; return end > 4500 ? { start: 0, end } : null; }      // intro before the first line
-    const cur = L[idx], next = L[idx + 1];
-    const text = (cur.s || '').trim();
-    const end = next ? next.t : dur;
-    if (!end) return null;
-    if (!text) return end - cur.t > 2500 ? { start: cur.t, end } : null;                      // an empty line = instrumental
-    const est = cur.t + Math.min(end - cur.t, Math.max(2600, text.length * 115));              // roughly when this line has been sung
-    return (end - est > 4500 && p >= est) ? { start: est, end } : null;
-  }
-  function updateInterlude(p) {
-    const il = $('interlude');
-    if (!il) return;
-    const hit = B.on ? null : interludeAt(p);
-    if (hit && p < hit.end - 500) {
-      if (!IL.on || IL.end !== hit.end) {
-        il.style.setProperty('--tot', Math.max(1500, hit.end - hit.start - 300) + 'ms');
-        il.style.setProperty('--el', Math.max(0, p - hit.start) + 'ms');                      // dots already lit for the time that has passed
-        il.classList.remove('go'); void il.offsetWidth; il.classList.add('go');
-        IL.on = true; IL.end = hit.end;
-        el.lyrics.classList.add('resting');
-      }
-    } else if (IL.on) {
-      IL.on = false; el.lyrics.classList.remove('resting'); il.classList.remove('go');
-    }
-  }
-  function resetInterlude() { IL.on = false; el.lyrics.classList.remove('resting'); const il = $('interlude'); if (il) il.classList.remove('go'); }
 
   // ------------------------------------------------------------------ ambient info: shown while the buttons are hidden
   let ambT = 0, ambI = 0, ambOn = false;
