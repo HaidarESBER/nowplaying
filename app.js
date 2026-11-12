@@ -100,10 +100,18 @@
   }
 
   // ------------------------------------------------------------------ clock
+  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+  const toArabicDigits = (x) => String(x).replace(/[0-9]/g, (dg) => AR_DIGITS[+dg]).replace(/\bAM\b/i, 'ص').replace(/\bPM\b/i, 'م');
+  // a song counts as Arabic by its script (title, artist, lyrics) or by the Arabic look, not only by the look:
+  // an Arabic pop song keeps the pop look but still gets Arabic numerals and an Arabic greeting
+  function arabicSong() { return !!(S.track && (S.gfam === 'arabic' || arabicByScript(S.track))); }
+
   function tickClock() {
     const now = new Date();
     const t = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    el.clock.textContent = t;
+    const ar = S.screen === 'player' && arabicSong();                // Arabic song: Arabic numerals (and AM/PM) on the player clock
+    el.clock.textContent = ar ? toArabicDigits(t) : t;
+    el.clock.classList.toggle('ar', ar);
     el.idleClock.textContent = t;
     el.idleDate.textContent = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
   }
@@ -323,6 +331,7 @@
       el.artist.textContent = t.album && t.album !== t.title ? t.artist + '  ·  ' + t.album : t.artist;
       el.cover.src = t.art || '';
       setWash(t.art);
+      tickClock(); renderAmbient();
       paletteOf(t.art).then((p) => { if (S.trackId === t.id) applyPalette(p); });
       el.coverWrap.classList.remove('swap'); el.meta.classList.remove('swap');
     };
@@ -505,6 +514,7 @@
     S.lines = lines; S.lineIdx = -3;
     if (typeof lyricsScriptHint === 'function') lyricsScriptHint();
     renderLyrics();
+    tickClock(); renderAmbient();
     updateLyricLine(position());
   }
   function clearLyrics() {
@@ -1256,9 +1266,10 @@
 
   // ------------------------------------------------------------------ the phrase shown while the buttons are hidden
   function renderAmbient() {
-    const n = getName();
-    $('ambMain').textContent = n ? 'Hi ' + n + ',' : 'Hi there,';
-    $('ambSub').textContent = 'you’re now listening to:';
+    const n = getName(), ar = S.screen === 'player' && arabicSong();
+    $('ambMain').textContent = ar ? ('مرحباً ' + n).trim() + '،' : (n ? 'Hi ' + n + ',' : 'Hi there,');
+    $('ambSub').textContent = ar ? 'أنت تستمع الآن إلى:' : 'you’re now listening to:';
+    $('ambient').dir = ar ? 'rtl' : 'ltr';
   }
   renderAmbient();
 
@@ -1298,6 +1309,7 @@
     const swap = () => {
       FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
       centerLine(S.lineIdx, true);                                  // the typeface changes line heights: re-centre while hidden
+      tickClock(); renderAmbient();
       setTimeout(() => el.lyrics.classList.remove('relayout'), 40);
     };
     if (el.lyricsInner.children.length && S.screen === 'player') { el.lyrics.classList.add('relayout'); setTimeout(swap, 220); }

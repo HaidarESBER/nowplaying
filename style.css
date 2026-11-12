@@ -251,8 +251,8 @@ body.lyrics #lyrics { display: block; }
 
 /* ---------- idle ---------- */
 #idle {
-  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+  text-align: right; padding: var(--pad-t) max(var(--pad-r), 9vw) var(--pad-b) var(--pad-l);
 }
 #idleClock { font-size: clamp(72px, 18vw, 140px); font-weight: 100; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 #idleDate { margin-top: 8px; font-size: 19px; letter-spacing: .04em; color: rgba(255,255,255,.7); text-transform: capitalize; }
@@ -688,7 +688,7 @@ body[class*="gn-"] .ln.act.fx-fade .sl, body[class*="gn-"] .ln.act.fx-fade .slas
 #tools { transition: opacity .6s ease; }
 body.chrome-off #tools { opacity: 0; pointer-events: none; }
 
-#clock { display: inline-block; transform-origin: left center; will-change: transform; transition: transform .6s cubic-bezier(.22, .8, .3, 1); }
+#clock { display: inline-block; transform-origin: left center; will-change: transform; transition: transform .6s cubic-bezier(.22, .8, .3, 1), color .8s ease, text-shadow .8s ease; }
 body.chrome-off #clock { transform: scale(1.9); transition-duration: 1s; }
 
 #ambient {                                         /* sits right above the song cover; glides in from the right, back to the right on touch */
@@ -700,7 +700,7 @@ body.chrome-off #ambient { opacity: 1; transform: translateX(-50%); transition: 
 #ambMain { font-size: clamp(17px, 3.4vw, 24px); font-weight: 700; line-height: 1.2; text-shadow: 0 2px 14px rgba(0,0,0,.5); }
 #ambSub { margin-top: 2px; font-size: clamp(12px, 2.2vw, 15px); color: rgba(255,255,255,.72); text-shadow: 0 1px 10px rgba(0,0,0,.45); }
 @media (orientation: landscape) {                  /* cover is on the left: line the phrase up with its left edge */
-  #ambient { left: 0; text-align: left; transform: translateX(48px); }
+  #ambient { left: 0; text-align: start; transform: translateX(48px); }
   body.chrome-off #ambient { transform: translateX(0); }
 }
 body.chrome-off { cursor: none; }                  /* desktop: the pointer hides too until it moves */
@@ -722,3 +722,13 @@ body.chrome-off #controls { transition-duration: .6s, 1s; }
 }
 @media (orientation: portrait) { body.chrome-off #lyrics { transform: translateY(var(--drop)); transition-duration: .35s, 1s; } }
 @media (prefers-reduced-motion: reduce) { #coverWrap, #meta, #controls, #lyrics { transition-duration: .01s !important; } }
+
+/* =====================================================================================================
+   The clock follows the song: the look's typeface and colours (Arabic songs: Arabic numerals, set in the same style)
+   ===================================================================================================== */
+body[class*="gn-"] #clock { font-family: var(--gfont, inherit); color: var(--gcol, rgba(255,255,255,.7)); text-shadow: 0 0 10px var(--ca5); letter-spacing: .06em; }
+body.gn-hiphop #clock { text-shadow: 2px 2px 0 var(--ca); letter-spacing: .04em; }
+body.gn-rock #clock { text-shadow: 0 0 8px var(--ca8), 0 0 18px var(--cb5); }
+body.gn-electronic #clock { text-shadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 10px var(--cc8); letter-spacing: .1em; }
+body.gn-country #clock, body.gn-classical #clock, body.gn-arabic #clock { letter-spacing: .03em; }
+#clock.ar { letter-spacing: 0 !important; font-style: normal; font-size: 17px; }
