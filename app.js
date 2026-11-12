@@ -1185,33 +1185,13 @@
     toast(FX_LABEL[pool[fxCycle]] + '  (' + (fxCycle + 1) + '/' + pool.length + ')');
   }
 
-  // ------------------------------------------------------------------ ambient info: shown while the buttons are hidden
-  let ambT = 0, ambI = 0, ambOn = false;
-  function ambItems() {
-    const n = getName(), d = new Date(), items = [];
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const date = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-    items.push({ main: n ? hello() + ', ' + n : hello(), sub: (cfg.clock ? time + '  ·  ' : '') + date });
-    if (S.device && S.device.name) items.push({ main: 'Playing on ' + S.device.name, sub: typeof S.device.volume_percent === 'number' ? 'Volume ' + S.device.volume_percent + '%' : '' });
-    if (S.track && S.track.album && S.track.album !== S.track.title) items.push({ main: S.track.album, sub: 'From the album' });
-    items.push({ main: (S.shuffle ? 'Shuffle on' : 'Shuffle off') + '  ·  Repeat ' + (S.repeat === 'off' ? 'off' : S.repeat === 'track' ? 'one' : 'all'), sub: S.liked ? 'In your Liked Songs' : '' });
-    return items;
+  // ------------------------------------------------------------------ the phrase shown while the buttons are hidden
+  function renderAmbient() {
+    const n = getName();
+    $('ambMain').textContent = n ? 'Hi ' + n + ',' : 'Hi there,';
+    $('ambSub').textContent = 'you’re now listening to:';
   }
-  function ambShow(first) {
-    const items = ambItems();
-    ambI = first ? 0 : (ambI + 1) % items.length;
-    const it = items[ambI], box = $('ambient');
-    const put = () => { $('ambMain').textContent = it.main; $('ambSub').textContent = it.sub; box.classList.remove('swap'); };
-    if (first) put(); else { box.classList.add('swap'); setTimeout(put, 420); }
-  }
-  function ambStart() { ambShow(true); clearInterval(ambT); ambT = setInterval(() => ambShow(false), 7000); }
-  function ambStop() { clearInterval(ambT); }
-  new MutationObserver(() => {
-    const off = document.body.classList.contains('chrome-off');
-    if (off !== ambOn) { ambOn = off; if (off) ambStart(); else ambStop(); }
-  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  // keep the time in the first item fresh
-  setInterval(() => { if (ambOn && ambI === 0) ambShow(true); }, 30000);
+  renderAmbient();
 
   // ------------------------------------------------------------------ genre looks
   // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
@@ -1637,7 +1617,7 @@
   $('setClose').addEventListener('click', () => { el.setSheet.hidden = true; });
   $('cfgClock').addEventListener('change', (e) => { cfg.clock = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
-  $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); });
+  $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); renderAmbient(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
   $('cfgGenre').addEventListener('change', (e) => {
     cfg.genre = e.target.checked; saveCfg(); applyGenre(); syncSettingsUI();
