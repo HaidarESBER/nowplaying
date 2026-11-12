@@ -374,6 +374,7 @@
       }
     }
     updateLyricLine(p);
+    updateInterlude(p);
   }
   setInterval(() => tick(false), 500);
 
@@ -415,14 +416,26 @@
         for (const it of (list || [])) { const l = parseLrc(it.syncedLyrics); if (l.length) { lines = l; break; } }
       }
       if (S.trackId !== t.id) return;
+      if (lines && lines.length && lines.some((l) => /[؀-ۿ]/.test(l.s))) await loadArabicFonts();   // no typeface swap in the middle of a line
+      if (S.trackId !== t.id) return;
       if (lines && lines.length) setLyrics(lines); else clearLyrics();
     } catch (e) {
       if (S.trackId === t.id && !ac.signal.aborted) clearLyrics();   // offline: simply no lyrics
     }
   }
 
+  let arabicFontsReady = null;
+  function loadArabicFonts() {
+    if (!arabicFontsReady) {
+      const loads = ['NP Cairo', 'NP Naskh', 'NP Kufi'].map((f) => (document.fonts && document.fonts.load ? document.fonts.load('700 20px "' + f + '"', 'ع') : Promise.resolve()));
+      arabicFontsReady = Promise.race([Promise.all(loads), new Promise((r) => setTimeout(r, 1800))]);
+    }
+    return arabicFontsReady;
+  }
+
   function setLyrics(lines) {
     S.lines = lines; S.lineIdx = -3;
+    if (typeof lyricsScriptHint === 'function') lyricsScriptHint();
     renderLyrics();
     updateLyricLine(position());
   }
@@ -437,6 +450,7 @@
       const has = !!(S.lines && S.lines.length);      // read the latest state when the fade ends
       const want = has && S.showLyrics;
       leaveBrowse();
+      resetInterlude();
       W = null;
       el.lyricsInner.textContent = '';
       if (has) {
@@ -1005,6 +1019,7 @@
     chill:      ['v0', 'v1', 'v2', 'v3', 'wave', 'swing', 'doors'],
     soul:       ['v0', 'v1', 'v2', 'v3', 'wave', 'swing', 'pop'],
     country:    ['v0', 'v1', 'v2', 'v3', 'tear', 'swing', 'pop'],
+    arabic:     ['v0', 'v1', 'v2', 'v3', 'doors', 'blinds', 'katana', 'wave', 'swing', 'pop'],
     tropical:   ['v0', 'v1', 'v2', 'v3', 'pop', 'chop', 'shatter', 'wave'],
     pop:        ['v0', 'v1', 'v2', 'v3', 'pop', 'chop', 'shatter', 'wave', 'zip'],
   };
@@ -1013,7 +1028,7 @@
   function clearFx(n) {
     clearTimeout(n._fxT);
     n.querySelectorAll('.sl, .slash').forEach((x) => x.remove());
-    n.classList.remove('fx-run', 'wfx-chop', 'wfx-wave', 'wfx-swing', 'wfx-pop');
+    n.classList.remove('fx-run', 'fx-fade', 'wfx-chop', 'wfx-wave', 'wfx-swing', 'wfx-pop');
     if (n._wrapped) { n.textContent = n.dataset.t || n.textContent; n._wrapped = false; }
     n._fx = false;
   }
@@ -1129,7 +1144,19 @@
       i.style.cssText = 'top:' + sl.y.toFixed(1) + '%;width:' + sl.len.toFixed(0) + 'px;--sa:' + sl.ang.toFixed(2) + 'deg;--dur:' + g.dur + 's;--sd:' + sl.sd + 's';
       n.appendChild(i);
     });
-    n._fxT = setTimeout(() => clearFx(n), (g.dur + tail) * 1000 + 90);
+    n._fxT = setTimeout(() => {
+      n.classList.remove('fx-run'); n.classList.add('fx-fade');      // the real text shows underneath while the pieces fade out
+      n._fxT = setTimeout(() => clearFx(n), 260);
+    }, (g.dur + tail) * 1000 + 90);
+  }
+
+  // entrances whose keyframes animate letter-spacing: they tear Arabic's joined letters apart, so right-to-left lines never get them
+  const LETTER_SPACING_FX = { hiphop: ['v2'], classical: ['v0', 'v2'] };
+  function poolFor(fam, n, ignoreWords) {
+    let pool = (FX_POOL[fam] || []).slice();
+    if (!ignoreWords && wantsWords()) pool = pool.filter((t) => /^v\d$/.test(t));      // karaoke / word-by-word keep their own word timing
+    if (n && n.classList.contains('rtl')) pool = pool.filter((t) => (LETTER_SPACING_FX[fam] || []).indexOf(t) < 0);
+    return pool;
   }
 
   // choose the entrance for a line that just became active (never the same twice in a row)
@@ -1137,7 +1164,7 @@
     clearFx(n);
     forced = forced || S.fxForce;
     const fam = activeFam();
-    const pool = (FX_POOL[fam] || []).filter((t) => forced || !(wantsWords() && !/^v\d$/.test(t)));   // karaoke / word-by-word keep their own word timing
+    const pool = poolFor(fam, n, !!forced);
     if (!fam || REDUCED || !pool.length) { n.dataset.v = '0'; return; }
     let t = forced;
     if (!t) { do { t = pool[Math.floor(Math.random() * pool.length)]; } while (t === S.fxLast && pool.length > 1); }
@@ -1153,12 +1180,75 @@
     const fam = activeFam();
     const act = el.lyricsInner.querySelector('.ln.act');
     if (!fam || !act) { toast('Play a song with lyrics and a genre look first'); return; }
-    const pool = FX_POOL[fam];
+    const pool = poolFor(fam, act, true);
     fxCycle = (fxCycle + 1) % pool.length;
     S.fxForce = undefined;
     startLineFx(act, pool[fxCycle]);
     toast(FX_LABEL[pool[fxCycle]] + '  (' + (fxCycle + 1) + '/' + pool.length + ')');
   }
+
+  // ------------------------------------------------------------------ interlude: something nice for instrumental gaps
+  // Intros, instrumental breaks, empty lines and outros get three breathing dots that light up one after another
+  // (a countdown to the next line) in the cover's colours, with notes drifting up. The lyrics dim while it shows.
+  const IL = { on: false, end: 0 };
+  function interludeAt(p) {
+    const L = S.lines;
+    if (!L || !L.length || !S.track) return null;
+    const dur = S.track.dur || 0, idx = S.lineIdx;
+    if (idx < 0) { const end = L[0].t; return end > 4500 ? { start: 0, end } : null; }      // intro before the first line
+    const cur = L[idx], next = L[idx + 1];
+    const text = (cur.s || '').trim();
+    const end = next ? next.t : dur;
+    if (!end) return null;
+    if (!text) return end - cur.t > 2500 ? { start: cur.t, end } : null;                      // an empty line = instrumental
+    const est = cur.t + Math.min(end - cur.t, Math.max(2600, text.length * 115));              // roughly when this line has been sung
+    return (end - est > 4500 && p >= est) ? { start: est, end } : null;
+  }
+  function updateInterlude(p) {
+    const il = $('interlude');
+    if (!il) return;
+    const hit = B.on ? null : interludeAt(p);
+    if (hit && p < hit.end - 500) {
+      if (!IL.on || IL.end !== hit.end) {
+        il.style.setProperty('--tot', Math.max(1500, hit.end - hit.start - 300) + 'ms');
+        il.style.setProperty('--el', Math.max(0, p - hit.start) + 'ms');                      // dots already lit for the time that has passed
+        il.classList.remove('go'); void il.offsetWidth; il.classList.add('go');
+        IL.on = true; IL.end = hit.end;
+        el.lyrics.classList.add('resting');
+      }
+    } else if (IL.on) {
+      IL.on = false; el.lyrics.classList.remove('resting'); il.classList.remove('go');
+    }
+  }
+  function resetInterlude() { IL.on = false; el.lyrics.classList.remove('resting'); const il = $('interlude'); if (il) il.classList.remove('go'); }
+
+  // ------------------------------------------------------------------ ambient info: shown while the buttons are hidden
+  let ambT = 0, ambI = 0, ambOn = false;
+  function ambItems() {
+    const n = getName(), d = new Date(), items = [];
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+    items.push({ main: n ? hello() + ', ' + n : hello(), sub: (cfg.clock ? time + '  ·  ' : '') + date });
+    if (S.device && S.device.name) items.push({ main: 'Playing on ' + S.device.name, sub: typeof S.device.volume_percent === 'number' ? 'Volume ' + S.device.volume_percent + '%' : '' });
+    if (S.track && S.track.album && S.track.album !== S.track.title) items.push({ main: S.track.album, sub: 'From the album' });
+    items.push({ main: (S.shuffle ? 'Shuffle on' : 'Shuffle off') + '  ·  Repeat ' + (S.repeat === 'off' ? 'off' : S.repeat === 'track' ? 'one' : 'all'), sub: S.liked ? 'In your Liked Songs' : '' });
+    return items;
+  }
+  function ambShow(first) {
+    const items = ambItems();
+    ambI = first ? 0 : (ambI + 1) % items.length;
+    const it = items[ambI], box = $('ambient');
+    const put = () => { $('ambMain').textContent = it.main; $('ambSub').textContent = it.sub; box.classList.remove('swap'); };
+    if (first) put(); else { box.classList.add('swap'); setTimeout(put, 420); }
+  }
+  function ambStart() { ambShow(true); clearInterval(ambT); ambT = setInterval(() => ambShow(false), 7000); }
+  function ambStop() { clearInterval(ambT); }
+  new MutationObserver(() => {
+    const off = document.body.classList.contains('chrome-off');
+    if (off !== ambOn) { ambOn = off; if (off) ambStart(); else ambStop(); }
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  // keep the time in the first item fresh
+  setInterval(() => { if (ambOn && ambI === 0) ambShow(true); }, 30000);
 
   // ------------------------------------------------------------------ genre looks
   // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
@@ -1171,13 +1261,14 @@
     ['chill', /lo-?fi|chill|ambient|dream|downtempo|sleep|shoegaze|new age|bedroom|meditation|\bstudy\b/],
     ['soul', /r&b|\brnb\b|soul|funk|motown|disco|quiet storm|gospel/],
     ['country', /country|folk|bluegrass|americana|blues|singer.songwriter|acoustic|cowboy|western|\broots\b/],
-    ['tropical', /reggae|dancehall|reggaeton|latin|salsa|bachata|afro|dembow|cumbia|tropical|samba|bossa|arab|\brai\b|ra\u00ef|khaleeji|mizrahi|amapiano/],
+    ['arabic', /arab|khaleeji|\brai\b|ra\u00ef|mizrahi|oud|tarab|maghreb|levant|egypt|lebanese|syrian|iraqi|gulf|shaabi|chaabi|mahraganat|fairuz|fairouz/],
+    ['tropical', /reggae|dancehall|reggaeton|latin|salsa|bachata|afro|dembow|cumbia|tropical|samba|bossa|amapiano/],
     ['pop', /pop|dance|teen|boy band|idol/],
     ['rock', /alternative|indie rock|britpop/],                 // weak match: only when nothing more specific fits
   ];
   const FAMS = GENRE_RULES.map((r) => r[0]).filter((v, i, a) => a.indexOf(v) === i);
   const FAM_NAMES = { hiphop: 'Hip-hop', rock: 'Rock', electronic: 'Electronic', classical: 'Classical & jazz', chill: 'Lo-fi & chill',
-    soul: 'R&B & soul', country: 'Country & folk', tropical: 'Latin & reggae', pop: 'Pop' };
+    soul: 'R&B & soul', country: 'Country & folk', arabic: 'Arabic', tropical: 'Latin & reggae', pop: 'Pop' };
   const familyOf = (gs) => {
     const l = (gs || []).map((g) => String(g).toLowerCase());
     for (const [f, re] of GENRE_RULES) if (l.some((g) => re.test(g))) return f;
@@ -1188,8 +1279,15 @@
 
   function applyGenre() {
     const f = cfg.genre ? (S.gforce !== undefined ? S.gforce : S.gfam) : '';
-    FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
-    setTimeout(() => centerLine(S.lineIdx, true), 60);             // the typeface changes line heights: re-centre
+    const cur = (document.body.className.match(/\bgn-(\w+)/) || [])[1] || '';
+    if (cur === f) return;                                          // nothing changes: no relayout, no flicker
+    const swap = () => {
+      FAMS.forEach((k) => document.body.classList.toggle('gn-' + k, k === f));
+      centerLine(S.lineIdx, true);                                  // the typeface changes line heights: re-centre while hidden
+      setTimeout(() => el.lyrics.classList.remove('relayout'), 40);
+    };
+    if (el.lyricsInner.children.length && S.screen === 'player') { el.lyrics.classList.add('relayout'); setTimeout(swap, 220); }
+    else swap();
   }
   // Genre detection: look the song up online first (Apple Music search, then MusicBrainz tags), and only if neither
   // knows it fall back to the artist's Spotify genres. Slow is fine: the look appears when the answer arrives, and
@@ -1223,15 +1321,23 @@
   }
 
   // 1) Apple Music (iTunes Search): one genre per song. Only trust results whose artist matches.
+  const GENERIC_GENRE = /^(worldwide|world|international|music|various|other|unknown|spoken word)$/i;
   async function genreFromItunes(names, title) {
-    const j = await fetchJson('https://itunes.apple.com/search?term=' + encodeURIComponent((names[0] + ' ' + title).slice(0, 120)) + '&entity=song&limit=10');
+    const j = await fetchJson('https://itunes.apple.com/search?term=' + encodeURIComponent((names[0] + ' ' + title).slice(0, 120)) + '&entity=song&limit=15');
     const res = (j && j.results) || [];
     const want = names.map(norm).filter((n) => n.length > 1);
     const t = norm(title);
     const sameArtist = res.filter((r) => { const ra = norm(r.artistName); return ra && want.some((w) => sameName(ra, w)); });
     const exact = sameArtist.find((r) => { const rt = norm(r.trackName); return rt === t || rt.startsWith(t) || t.startsWith(rt); });
     const pick = exact || sameArtist[0];
-    return pick ? pick.primaryGenreName : null;
+    if (!pick) return null;
+    const out = [pick.primaryGenreName];
+    // the artist's other songs (strict name match, so a "feat." collaboration can't mislead), most common genre first
+    const count = {};
+    res.filter((r) => { const ra = norm(r.artistName); return r !== pick && !/[&,]|feat/i.test(r.artistName) && want.some((w) => sameName(ra, w)); })
+       .forEach((r) => { count[r.primaryGenreName] = (count[r.primaryGenreName] || 0) + 1; });
+    Object.keys(count).sort((a, b) => count[b] - count[a]).forEach((g) => out.push(g));
+    return out;
   }
 
   // 2) MusicBrainz: community tags of the artist ("thrash metal", "jazz rap"...). Needs an exact name match; max 1 request/s.
@@ -1242,7 +1348,8 @@
     mbLast = Date.now();
     const j = await fetchJson('https://musicbrainz.org/ws/2/artist/?query=' + encodeURIComponent('artist:"' + name.replace(/"/g, '') + '"') + '&fmt=json&limit=3', 9000);
     const n = norm(name);
-    const hit = ((j && j.artists) || []).find((x) => (norm(x.name) === n || sameName(norm(x.name), n)) && (x.score || 0) >= 80);
+    const hit = ((j && j.artists) || []).filter((x) => norm(x.name) === n && (x.score || 0) >= 90)
+      .sort((p, q) => (q.tags || []).reduce((a, b) => a + b.count, 0) - (p.tags || []).reduce((a, b) => a + b.count, 0))[0];
     if (!hit) return null;
     const tags = (hit.tags || []).slice().sort((p, q) => q.count - p.count).slice(0, 8).map((x) => x.name);
     return tags.length ? tags : null;
@@ -1274,8 +1381,12 @@
       return r;
     };
     try {
-      const g = await genreFromItunes(names, t.title);
-      if (g) { const f = familyOf([g]); if (f) return done(f, g, 'Apple Music'); why.push('Apple Music says “' + g + '”'); } else why.push('not on Apple Music');
+      const gl = await genreFromItunes(names, t.title);
+      if (gl) {
+        const hit = gl.filter((g) => !GENERIC_GENRE.test(g)).find((g) => familyOf([g]));
+        if (hit) return done(familyOf([hit]), hit, 'Apple Music');
+        why.push('Apple Music says “' + gl[0] + '”');
+      } else why.push('not on Apple Music');
     } catch (e) { why.push('Apple Music unreachable'); }
     try {
       const tags = names[0] ? await genreFromMusicBrainz(names[0]) : null;
@@ -1289,6 +1400,19 @@
   }
   if (DEMO) window.__npDetect = detectGenre;                          // for testing the lookup against the real services
 
+  const isArabicScript = (x) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(x);
+  function arabicByScript(t) {
+    if (isArabicScript(String(t.title) + String(t.artist))) return 'the title or artist';
+    if (S.lines && S.lines.length > 3 && S.lines.filter((l) => isArabicScript(l.s)).length >= S.lines.length * 0.5) return 'the lyrics';
+    return '';
+  }
+
+  function lyricsScriptHint() {                                    // no genre found (yet) but the lyrics are Arabic: use the Arabic look
+    if (S.gfam || !cfg.genre || !S.track || /Looking up/.test(S.ginfo || '')) return;
+    const by = arabicByScript(S.track);
+    if (by) { S.gfam = 'arabic'; S.ginfo = 'Arabic \u00b7 via ' + by + ' (Arabic script)'; applyGenre(); updateGenreInfo(); }
+  }
+
   function updateGenreInfo() { const g = $('genreInfo'); if (g) g.textContent = S.ginfo || 'Waiting for a song'; }
 
   async function loadGenre(t) {
@@ -1300,6 +1424,7 @@
     let r;
     try { r = await detectGenre(t); } catch (e) { r = { fam: '', why: 'lookup failed' }; }
     if (S.trackId !== t.id) return;                                  // skipped to another song meanwhile
+    if (!r.fam) { const by = arabicByScript(t); if (by) r = { fam: 'arabic', raw: 'Arabic script', src: by, why: '' }; }
     S.gfam = r.fam;
     S.ginfo = r.fam ? FAM_NAMES[r.fam] + ' · via ' + r.src + (r.raw ? ' (' + r.raw + ')' : '')
                     : 'No genre found' + (r.why ? ' — ' + r.why : '');

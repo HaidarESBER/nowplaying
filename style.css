@@ -1,3 +1,11 @@
+/* Arabic fonts, bundled with the app (no third-party requests). They only apply to Arabic characters (unicode-range). */
+@font-face { font-family: "NP Cairo"; src: url("fonts/cairo-arabic.woff2") format("woff2"); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: "NP Naskh"; src: url("fonts/amiri-bold-arabic.woff2") format("woff2"); font-weight: 400 900; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: "NP Kufi"; src: url("fonts/reem-kufi-arabic.woff2") format("woff2"); font-weight: 400 700; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+
 :root {
   --pad-t: max(env(safe-area-inset-top), 22px);
   --pad-r: max(env(safe-area-inset-right), 36px);
@@ -14,7 +22,7 @@
 html, body {
   margin: 0; height: 100%;
   background: #000; color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "NP Cairo", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -160,12 +168,12 @@ body.lyrics #lyrics { display: block; }
 }
 #lyrics.loading { opacity: 0; transition-duration: .2s; }
 #lyricsInner {
-  position: absolute; left: 0; right: 0; top: 0;
+  position: absolute; left: 3%; right: 3%; top: 0;
   transition: transform .6s cubic-bezier(.22, .8, .3, 1);
   will-change: transform;
 }
 .ln {
-  width: calc(98% / var(--act, 1.25)); margin: 0 0 .85em; font-size: calc(var(--lyr) * var(--lscale, 1)); font-weight: 700; line-height: 1.18;
+  width: calc(92% / var(--act, 1.25)); margin: 0 0 .85em; font-size: calc(var(--lyr) * var(--lscale, 1)); font-weight: 700; line-height: 1.18;
   opacity: .26; transform-origin: left center;
   transition: opacity .5s ease, transform .55s cubic-bezier(.22, .8, .3, 1);
   overflow-wrap: anywhere;
@@ -388,7 +396,7 @@ body[class*="gn-"] .ln.act[data-v="3"] { animation: var(--v3, var(--v0, none)); 
 /* =========================================================== HIP-HOP: stamps, slams, a comic burst and a bass pump */
 body.gn-hiphop {
   --h1: 48; --h2: 285; --h3: 8; --pulse: .67s;
-  --gfont: Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
+  --gfont: "NP Kufi", Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
   --gcol: #fff; --gshadow: 3px 3px 0 var(--ca), 6px 6px 0 rgba(0,0,0,.55);
   --v0: gn-slam .45s cubic-bezier(.2,1.4,.4,1) both, gn-pump .67s ease-in-out .45s infinite;
   --v1: gn-stamp .55s cubic-bezier(.2,1.2,.3,1) both, gn-pump .67s ease-in-out .55s infinite;
@@ -399,13 +407,13 @@ body.gn-hiphop .ln { text-transform: uppercase; letter-spacing: .02em; }
 @keyframes gn-pump { 0%, 100% { transform: scale(var(--act)); } 50% { transform: scale(calc(var(--act) * 1.05)); } }
 @keyframes gn-slam  { 0% { transform: scale(calc(var(--act) * 1.8)) rotate(-5deg); opacity: 0; } 55% { transform: scale(calc(var(--act) * .92)) rotate(1.4deg); opacity: 1; } 100% { transform: scale(var(--act)) rotate(0); opacity: 1; } }
 @keyframes gn-stamp { 0% { transform: scale(calc(var(--act) * 3.4)); opacity: 0; filter: blur(12px); } 55% { transform: scale(calc(var(--act) * .9)); opacity: 1; filter: blur(0); } 70% { transform: scale(calc(var(--act) * 1.06)) translate(5px, -4px); } 85% { transform: scale(var(--act)) translate(-5px, 3px); } 100% { transform: scale(var(--act)); opacity: 1; } }
-@keyframes gn-spray { 0% { letter-spacing: .55em; transform: scale(var(--act)) skewX(-32deg) translateX(-70px); opacity: 0; filter: blur(7px); } 100% { letter-spacing: .02em; transform: scale(var(--act)) skewX(0) translateX(0); opacity: 1; filter: blur(0); } }
+@keyframes gn-spray { 0% { transform: scale(calc(var(--act) * 1.3), var(--act)) skewX(-32deg) translateX(-70px); opacity: 0; filter: blur(7px); } 100% { transform: scale(var(--act)) skewX(0) translateX(0); opacity: 1; filter: blur(0); } }
 @keyframes gn-scratch { 0% { clip-path: inset(0 100% 0 0); transform: translateX(-24px) scale(var(--act)) skewX(16deg); } 30% { clip-path: inset(0 45% 0 0); transform: translateX(14px) scale(var(--act)) skewX(-12deg); } 60% { clip-path: inset(0 12% 0 0); transform: translateX(-7px) scale(var(--act)) skewX(6deg); } 100% { clip-path: inset(0); transform: scale(var(--act)); } }
 
 /* =========================================================== ROCK / METAL: SLICED lines, quakes, lightning, spotlights, embers */
 body.gn-rock {
   --h1: 14; --h2: 350; --h3: 42; --pulse: 1.1s;
-  --gfont: "Arial Black", Impact, "sans-serif-black", "Helvetica Neue", sans-serif;
+  --gfont: "NP Kufi", "Arial Black", Impact, "sans-serif-black", "Helvetica Neue", sans-serif;
   --gcol: hsl(var(--h1) 100% 94%); --gshadow: 0 0 12px var(--ca8), 0 0 30px var(--cb5), 0 0 60px var(--ca2);
   --v0: gn-textwait .8s both, gn-glow 1.2s ease-in-out .8s infinite alternate;
   --v1: gn-textwait .8s both, gn-glow 1.2s ease-in-out .8s infinite alternate;
@@ -434,7 +442,7 @@ body.gn-rock .ln.act[data-v="1"]::after  { clip-path: polygon(0 66%, 100% 38%, 1
 /* =========================================================== ELECTRONIC: glitch, RGB split, scan-in, strobe; laser fan + neon grid */
 body.gn-electronic {
   --h1: 190; --h2: 300; --h3: 262; --pulse: .9s;
-  --gfont: "Segoe UI", "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
+  --gfont: "NP Kufi", "Segoe UI", "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
   --gcol: hsl(var(--h1) 100% 96%); --gshadow: -2px 0 var(--ca8), 2px 0 var(--cb8), 0 0 18px var(--cc8);
   --v0: gn-glitch .55s steps(3) both, gn-chroma 1.6s ease-in-out .55s infinite alternate;
   --v1: gn-rgbslide .7s ease-out both, gn-chroma 1.6s ease-in-out .7s infinite alternate;
@@ -451,7 +459,7 @@ body.gn-electronic .ln { text-transform: uppercase; letter-spacing: .05em; font-
 /* =========================================================== CLASSICAL / JAZZ: curtains, ink, a falling page; gold dust and light shafts */
 body.gn-classical {
   --h1: 44; --h2: 28; --h3: 54; --pulse: 2.6s;
-  --gfont: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  --gfont: "NP Naskh", Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
   --gcol: hsl(var(--h1) 90% 88%); --gshadow: 0 0 24px var(--ca5);
   --v0: gn-unfold 1.2s ease-out both, gn-gleam 4s ease-in-out 1.2s infinite alternate;
   --v1: gn-curtain 1.2s cubic-bezier(.3,.8,.3,1) both, gn-gleam 4s ease-in-out 1.2s infinite alternate;
@@ -459,16 +467,16 @@ body.gn-classical {
   --v3: gn-pagedrop 1.2s cubic-bezier(.3,1.3,.5,1) both, gn-gleam 4s ease-in-out 1.2s infinite alternate;
 }
 body.gn-classical .ln { font-style: italic; font-weight: 600; }
-@keyframes gn-unfold { 0% { opacity: 0; letter-spacing: .14em; filter: blur(4px); transform: translateY(10px) scale(var(--act)); } 100% { opacity: 1; letter-spacing: .01em; filter: blur(0); transform: translateY(0) scale(var(--act)); } }
+@keyframes gn-unfold { 0% { opacity: 0; filter: blur(4px); transform: translateY(10px) scale(calc(var(--act) * 1.1), var(--act)); } 100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(var(--act)); } }
 @keyframes gn-curtain { 0% { clip-path: inset(0 50% 0 50%); opacity: 0; } 100% { clip-path: inset(0); opacity: 1; } }
-@keyframes gn-inkbleed { 0% { opacity: 0; letter-spacing: .3em; filter: blur(14px); transform: scale(calc(var(--act) * 1.08)); } 100% { opacity: 1; letter-spacing: .01em; filter: blur(0); transform: scale(var(--act)); } }
+@keyframes gn-inkbleed { 0% { opacity: 0; filter: blur(14px); transform: scale(calc(var(--act) * 1.16), calc(var(--act) * 1.05)); } 100% { opacity: 1; filter: blur(0); transform: scale(var(--act)); } }
 @keyframes gn-pagedrop { 0% { opacity: 0; transform: translateY(-46px) rotate(-3deg) scale(var(--act)); } 70% { opacity: 1; transform: translateY(5px) rotate(.8deg) scale(var(--act)); } 100% { opacity: 1; transform: translateY(0) rotate(0) scale(var(--act)); } }
 @keyframes gn-gleam { from { text-shadow: 0 0 16px var(--ca2); } to { text-shadow: 0 0 34px var(--ca8), 0 0 60px var(--ca2); } }
 
 /* =========================================================== LO-FI / CHILL: dissolve, rise, ripple, drift; aurora + bokeh */
 body.gn-chill {
   --h1: 265; --h2: 15; --h3: 200; --pulse: 3s;
-  --gfont: "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --gfont: "NP Cairo", "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --gcol: hsl(var(--h1) 100% 95%); --gshadow: 0 0 26px var(--ca5);
   --v0: gn-dream 1.5s ease-out both, gn-float 7s ease-in-out 1.5s infinite;
   --v1: gn-rise 1.7s ease-out both, gn-float 7s ease-in-out 1.7s infinite;
@@ -485,7 +493,7 @@ body.gn-chill .ln { font-weight: 600; }
 /* =========================================================== R&B / SOUL: velvet slide, heartbeat, groove sway; sunset sweep */
 body.gn-soul {
   --h1: 345; --h2: 25; --h3: 300; --pulse: 1.2s;
-  --gfont: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --gfont: "NP Cairo", "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
   --gcol: hsl(var(--h1) 100% 95%); --gshadow: 0 0 22px var(--ca5), 0 2px 0 rgba(90,20,45,.6);
   --v0: gn-fadewarm .8s ease-out both, gn-sway 4.2s ease-in-out .8s infinite;
   --v1: gn-velvet .9s cubic-bezier(.2,.8,.3,1) both, gn-sway 4.2s ease-in-out .9s infinite;
@@ -502,7 +510,7 @@ body.gn-soul .ln { font-weight: 700; }
 /* =========================================================== COUNTRY / FOLK / BLUES: written out, typed, dropped paper; fireflies */
 body.gn-country {
   --h1: 38; --h2: 92; --h3: 22; --pulse: 5s;
-  --gfont: "Segoe Print", "Bradley Hand", "Noteworthy", "Marker Felt", "Comic Sans MS", cursive;
+  --gfont: "NP Naskh", "Segoe Print", "Bradley Hand", "Noteworthy", "Marker Felt", "Comic Sans MS", cursive;
   --gcol: hsl(var(--h1) 90% 88%); --gshadow: 1px 1px 0 rgba(80,45,10,.7), 0 0 18px var(--ca2);
   --v0: gn-ink 1.1s linear both, gn-wobble 5s ease-in-out 1.1s infinite;
   --v1: gn-typewriter 1.3s steps(26) both, gn-wobble 5s ease-in-out 1.3s infinite;
@@ -521,7 +529,7 @@ body.gn-country .ln.rtl.act { animation-name: gn-ink-rtl, gn-wobble; }
 /* =========================================================== LATIN / REGGAE / AFRO: pop-in, flips, bouncing drops; sun rays + blobs */
 body.gn-tropical {
   --h1: 28; --h2: 340; --h3: 175; --pulse: .9s;
-  --gfont: "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --gfont: "NP Cairo", "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --gcol: #fffaf0; --gshadow: 0 0 18px var(--ca8), 0 0 40px var(--cb5);
   --v0: gn-salsa .6s cubic-bezier(.3,1.5,.5,1) both, gn-shimmy 2.2s ease-in-out .6s infinite;
   --v1: gn-flip .8s cubic-bezier(.3,1.3,.5,1) both, gn-shimmy 2.2s ease-in-out .8s infinite;
@@ -538,7 +546,7 @@ body.gn-tropical .ln { font-weight: 800; }
 /* =========================================================== POP: bounce, star spin, zoom, jelly; candy glow, pulse rings, confetti */
 body.gn-pop {
   --h1: 325; --h2: 190; --h3: 50; --pulse: .9s;
-  --gfont: "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --gfont: "NP Cairo", "Trebuchet MS", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --gcol: #fff; --gshadow: 0 0 16px var(--ca8), 0 0 34px var(--cb5);
   --v0: gn-bounce .6s cubic-bezier(.3,1.7,.5,1) both, gn-candy 6s linear infinite;
   --v1: gn-starspin .8s cubic-bezier(.3,1.3,.5,1) both, gn-candy 6s linear infinite;
@@ -640,3 +648,83 @@ body[class*="gn-"] .ln.act.fx-run { color: transparent !important; text-shadow: 
 
 body.paused .sl, body.paused .slash, body.paused .wd { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .sl, .slash, .wd { animation: none !important; } }
+
+/* =====================================================================================================
+   ARABIC look (Fairouz, Khaleeji, Raï, Egyptian pop...): calligraphic, warm gold and teal, nothing that stretches letters
+   (letter-spacing / italics break Arabic's joined letters). Entrances start from the right.
+   ===================================================================================================== */
+body.gn-arabic {
+  --h1: 42; --h2: 175; --h3: 24;
+  --gfont: "NP Naskh", "Geeza Pro", "Noto Naskh Arabic", "Traditional Arabic", Georgia, serif;
+  --gcol: hsl(var(--h1) 85% 92%); --gshadow: 0 0 22px var(--ca5), 0 2px 0 rgba(55,32,6,.55);
+  --v0: ar-ink 1.25s linear both, ar-shimmer 4.5s ease-in-out 1.25s infinite alternate;
+  --v1: ar-lantern 1.4s ease-out both, ar-shimmer 4.5s ease-in-out 1.4s infinite alternate;
+  --v2: ar-smoke 1.5s ease-out both, ar-shimmer 4.5s ease-in-out 1.5s infinite alternate;
+  --v3: ar-tarab 1.2s cubic-bezier(.25,.9,.3,1) both, ar-shimmer 4.5s ease-in-out 1.2s infinite alternate;
+  --vx: ar-shimmer 4.5s ease-in-out infinite alternate;
+}
+body.gn-arabic .ln { font-weight: 700; line-height: 1.5; }                 /* Arabic needs more line height for its tall and low marks */
+body.gn-arabic .ln:not(.rtl).act[data-v="0"] { animation-name: ar-ink-l, ar-shimmer; }    /* Latin lines in this look are written left to right */
+@keyframes ar-ink { from { clip-path: inset(-18% 0 -18% 100%); } to { clip-path: inset(-18% -4% -18% 0); } }
+@keyframes ar-ink-l { from { clip-path: inset(-18% 100% -18% 0); } to { clip-path: inset(-18% -4% -18% 0); } }
+@keyframes ar-lantern { 0% { opacity: 0; filter: blur(10px) brightness(1.9); text-shadow: 0 0 60px var(--ca), 0 0 90px var(--cb5); transform: scale(calc(var(--act) * .93)); } 60% { opacity: 1; filter: blur(0) brightness(1.35); } 100% { opacity: 1; filter: none; transform: scale(var(--act)); } }
+@keyframes ar-smoke { 0% { opacity: 0; filter: blur(11px); transform: translateY(36px) scale(var(--act)); } 100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(var(--act)); } }
+@keyframes ar-tarab { 0% { opacity: 0; transform: translateX(64px) rotate(1.6deg) scale(var(--act)); } 60% { opacity: 1; transform: translateX(-8px) rotate(-.6deg) scale(var(--act)); } 100% { opacity: 1; transform: translateX(0) rotate(0) scale(var(--act)); } }
+@keyframes ar-shimmer { from { text-shadow: 0 0 14px var(--ca2), 0 2px 0 rgba(55,32,6,.55); } to { text-shadow: 0 0 30px var(--ca8), 0 0 56px var(--cb5), 0 2px 0 rgba(55,32,6,.55); } }
+
+/* ---- every Arabic line, in every look: never stretch / slant / capitalise (it breaks the joined letters) ---- */
+body .ln.rtl, body .ln.rtl .wd, body .ln.rtl .w, body .ln.rtl .sl { letter-spacing: 0 !important; text-transform: none !important; font-style: normal !important; }
+
+/* =====================================================================================================
+   Interlude (instrumental gaps, intros, outros) and ambient info (shown while the buttons are hidden)
+   ===================================================================================================== */
+/* ---- interlude: three breathing dots light up one after another (a countdown to the next line), with drifting notes ---- */
+#interlude {
+  position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center; gap: clamp(16px, 3.4vw, 30px);
+  opacity: 0; pointer-events: none; transition: opacity .7s ease;
+}
+#lyrics.resting #interlude { opacity: 1; }
+#lyrics.resting .ln { opacity: .1 !important; }
+#interlude i {
+  position: relative; display: block; width: clamp(14px, 3.4vw, 26px); height: clamp(14px, 3.4vw, 26px); border-radius: 50%;
+  background: rgba(255,255,255,.16);
+}
+#interlude i:nth-child(1) { --dot: var(--ca); }
+#interlude i:nth-child(2) { --dot: var(--cb); }
+#interlude i:nth-child(3) { --dot: var(--cc); }
+#interlude.go i {
+  animation: il-breathe 1.9s ease-in-out infinite, il-lit calc(var(--tot, 6000ms) / 3) linear both;
+  animation-delay: calc(var(--k) * .25s), calc(var(--tot, 6000ms) * var(--k) / 3 - var(--el, 0ms));
+}
+#interlude.go i::after {                         /* a ring that ripples out of each dot */
+  content: ''; position: absolute; inset: -55%; border-radius: 50%; border: 2px solid var(--dot); opacity: 0;
+  animation: il-ring 1.9s ease-out infinite; animation-delay: calc(var(--k) * .25s);
+}
+#interlude .nt { position: absolute; font-size: clamp(18px, 3.4vw, 28px); color: var(--ca); opacity: 0; text-shadow: 0 0 14px var(--ca8); }
+#interlude.go .nt { animation: il-note 3.6s ease-out infinite; }
+#interlude .n1 { left: 12%; top: -150%; } #interlude .n2 { right: 10%; top: -190%; animation-delay: 1.4s; color: var(--cb); } #interlude .n3 { left: 46%; top: -240%; animation-delay: 2.5s; color: var(--cc); }
+@keyframes il-breathe { 0%, 100% { transform: scale(.78); } 50% { transform: scale(1.22); } }
+@keyframes il-lit { from { background: rgba(255,255,255,.16); box-shadow: 0 0 0 transparent; } to { background: var(--dot); box-shadow: 0 0 22px var(--dot), 0 0 44px var(--dot); } }
+@keyframes il-ring { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes il-note { 0% { transform: translateY(40px) rotate(-12deg) scale(.7); opacity: 0; } 25% { opacity: .9; } 100% { transform: translateY(-60px) rotate(14deg) scale(1.1); opacity: 0; } }
+body.paused #interlude i, body.paused #interlude i::after, body.paused #interlude .nt { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { #interlude.go i, #interlude.go i::after, #interlude.go .nt { animation: none !important; } }
+
+/* ---- ambient info: while the buttons are hidden, the top of the screen shows who you are and what's going on ---- */
+#ambient {
+  position: fixed; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .9s ease;
+  top: max(env(safe-area-inset-top), 10px); left: max(env(safe-area-inset-left), 22px); right: max(env(safe-area-inset-right), 22px);
+}
+body.chrome-off #ambient { opacity: 1; }
+#ambient > div { transition: opacity .4s ease; }
+#ambient.swap > div { opacity: 0; }
+#ambMain { font-size: clamp(18px, 3.7vw, 26px); font-weight: 700; line-height: 1.2; text-shadow: 0 2px 14px rgba(0,0,0,.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ambSub { margin-top: 3px; font-size: clamp(12px, 2.3vw, 15px); color: rgba(255,255,255,.68); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (orientation: landscape) { #ambient { left: auto; max-width: 44%; text-align: right; right: max(env(safe-area-inset-right), 24px); } }
+
+/* ---- smoother lines: their own layers, no reflow-driven animation; the genre typeface swap fades instead of jumping ---- */
+.ln.act, .ln.d1 { backface-visibility: hidden; }
+.sl { backface-visibility: hidden; text-align: inherit; line-height: inherit; overflow-wrap: inherit; }
+#lyrics.relayout { opacity: 0; transition: opacity .2s ease; }
+body[class*="gn-"] .ln.act.fx-fade .sl, body[class*="gn-"] .ln.act.fx-fade .slash { animation: none !important; opacity: 0 !important; transition: opacity .22s ease; }

@@ -57,7 +57,9 @@
       </div>
     </div>
 
-    <div id="lyrics"><div id="lyricsInner"></div><button id="lyricsNow" hidden>Now</button></div>
+    <div id="lyrics"><div id="lyricsInner"></div>
+      <div id="interlude" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><span class="nt n1">♪</span><span class="nt n2">♫</span><span class="nt n3">♪</span></div>
+      <button id="lyricsNow" hidden>Now</button></div>
 
     <div id="controls">
       <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
@@ -107,6 +109,7 @@
   </section>
 </main>
 
+<div id="ambient" aria-hidden="true"><div id="ambMain"></div><div id="ambSub"></div></div>
 <div id="toast"></div>
 <div id="greet" hidden><div id="greetHi"></div><div id="greetName"></div></div>
 
