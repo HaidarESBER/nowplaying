@@ -41,7 +41,7 @@ const store = {
 };
 
 // ------------------------------------------------------------------ settings (this browser only)
-const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true };
+const cfg = { lscale: 1, clock: true, awake: true, autohide: true, lstyle: 'scroll', genre: true, autosize: true };
 try { Object.assign(cfg, JSON.parse(store.get('cfg') || '{}')); } catch (e) { /* defaults */ }
 
 // ------------------------------------------------------------------ state

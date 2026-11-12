@@ -39,6 +39,7 @@ function applyCfg() {
   if (['scroll', 'karaoke', 'focus', 'duo', 'words'].indexOf(cfg.lstyle) < 0) cfg.lstyle = 'scroll';
   ['scroll', 'karaoke', 'focus', 'duo', 'words'].forEach((k) => document.body.classList.toggle('ls-' + k, cfg.lstyle === k));
   clearWords(); prepareWords(S.lineIdx);
+  refreshAutoSize();
   if (typeof applyGenre === 'function') applyGenre();
   if (!cfg.awake && wake) { try { wake.release(); } catch (e) { /* ignore */ } wake = null; }
   if (cfg.awake) lockScreen();
@@ -47,7 +48,7 @@ function applyCfg() {
 function syncSettingsUI() {
   $('cfgGenre').checked = cfg.genre;
   updateGenreInfo(); updateLyrInfo();
-  $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
+  $('cfgAutosize').checked = cfg.autosize; $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
   setAwakeStatus();
   document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
   document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
@@ -65,6 +66,7 @@ $('cfgGenre').addEventListener('change', (e) => {
   cfg.genre = e.target.checked; saveCfg(); applyGenre(); syncSettingsUI();
   if (cfg.genre && S.track && !S.gfam) loadGenre(S.track);
 });
+$('cfgAutosize').addEventListener('change', (e) => { cfg.autosize = e.target.checked; saveCfg(); applyCfg(); });
 $('cfgHide').addEventListener('change', (e) => { cfg.autohide = e.target.checked; saveCfg(); chromeShow(); });
 $('cfgStyle').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;

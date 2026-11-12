@@ -177,6 +177,22 @@ function renderLyrics() {
   } else fill();
 }
 
+// "auto size": in the One line and Word by word styles a line of one or two words is drawn larger than the others.
+// It only sets --act (the playing line's scale) on that line, so every entrance animation scales along with it.
+const wordCount = (n) => (n.dataset.t || n.textContent || '').trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+function autoSize(n, isAct) {
+  n.style.removeProperty('--act');
+  if (!isAct || !cfg.autosize || (cfg.lstyle !== 'focus' && cfg.lstyle !== 'words')) return;
+  const w = wordCount(n);
+  if (w < 1 || w > 2) return;
+  const base = parseFloat(getComputedStyle(n).getPropertyValue('--act')) || 1.25;
+  n.style.setProperty('--act', (base * (w === 1 ? 1.9 : 1.5)).toFixed(2));
+}
+function refreshAutoSize() {                                          // after a settings change: redo the playing line
+  const n = el.lyricsInner.children[S.lineIdx];
+  if (n) { autoSize(n, true); setTimeout(() => centerLine(S.lineIdx, true), 60); }
+}
+
 function updateLyricLine(p) {
   if (!S.lines || !S.lines.length) return;
   const t = p + 250;
@@ -192,6 +208,7 @@ function updateLyricLine(p) {
     const d = Math.abs(i - idx);
     const n = nodes[i];
     n.classList.toggle('act', d === 0);
+    autoSize(n, d === 0);
     if (d === 0) startLineFx(n); else if (n._fx) clearFx(n);
     n.classList.toggle('d1', d === 1);
     n.classList.toggle('d2', d === 2);
