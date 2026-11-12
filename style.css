@@ -823,7 +823,8 @@ body.gn-montagem {
   --h1: 318; --h2: 178; --h3: 58; --pulse: .46s;
   --gfont: "NP Kufi", Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
   --gcol: #fff;
-  --gshadow: -3px 0 0 var(--cb), 3px 0 0 var(--ca), 0 3px 0 #000, 0 0 22px var(--ca8), 0 0 54px var(--cb5);
+  --gshadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000,
+    0 0 10px rgba(0,0,0,.95), 0 0 22px rgba(0,0,0,.7), -5px 0 0 var(--cb), 5px 0 0 var(--ca), 0 0 26px var(--ca5);
   --v0: mg-bang .5s cubic-bezier(.2,1.5,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
   --v1: mg-glitch .55s steps(1) both, mg-beat .46s ease-in-out .55s infinite;
   --v2: mg-zoom .5s cubic-bezier(.2,1.4,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
@@ -839,7 +840,7 @@ body.gn-montagem #clock { color: #fff; text-shadow: -2px 0 var(--cb), 2px 0 var(
 /* the line itself */
 @keyframes mg-beat {
   0%, 100% { transform: scale(var(--act)) translate(0, 0) rotate(0); filter: none; }
-  6%  { transform: scale(calc(var(--act) * 1.13)) translate(-4px, 1px) rotate(-.7deg); filter: brightness(1.5); }
+  6%  { transform: scale(calc(var(--act) * 1.13)) translate(-4px, 1px) rotate(-.7deg); filter: brightness(1.12); }
   14% { transform: scale(calc(var(--act) * 1.05)) translate(4px, -1px) rotate(.7deg); filter: none; }
   28% { transform: scale(var(--act)) translate(0, 0) rotate(0); }
   55% { transform: scale(calc(var(--act) * 1.04)) translate(2px, 0) rotate(.3deg); }
