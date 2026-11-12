@@ -732,3 +732,9 @@ body.gn-rock #clock { text-shadow: 0 0 8px var(--ca8), 0 0 18px var(--cb5); }
 body.gn-electronic #clock { text-shadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 10px var(--cc8); letter-spacing: .1em; }
 body.gn-country #clock, body.gn-classical #clock, body.gn-arabic #clock { letter-spacing: .03em; }
 #clock.ar { letter-spacing: 0 !important; font-style: normal; font-size: 17px; }
+
+/* landscape / PC: the clock is the last (rightmost) item of the top bar and grows from its right edge, so its last digit stays put */
+@media (orientation: landscape) {
+  #topbar #tools { order: 1; margin-left: 0; }
+  #clock { order: 2; transform-origin: right center; }
+}

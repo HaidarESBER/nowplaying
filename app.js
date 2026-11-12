@@ -584,7 +584,21 @@
     centerLine(idx, old === -3);
   }
 
+  // Landscape / PC with lyrics showing: the top bar's right edge lines up with the right edge of the lyrics, so the clock's
+  // last digit sits on the same vertical line as the first letter of an Arabic (right-to-left) line.
+  function alignTopbar() {
+    const tb = $('topbar');
+    if (!tb) return;
+    if (!(window.matchMedia && matchMedia('(orientation: landscape)').matches) || !document.body.classList.contains('lyrics')) { tb.style.removeProperty('right'); return; }
+    const r = el.lyricsInner.getBoundingClientRect();
+    if (r.width > 0) tb.style.right = Math.max(8, document.documentElement.clientWidth - r.right) + 'px';
+  }
+  new ResizeObserver(alignTopbar).observe(el.lyrics);
+  window.addEventListener('resize', alignTopbar);
+  window.addEventListener('orientationchange', () => setTimeout(alignTopbar, 250));
+
   function centerLine(idx, instant) {
+    alignTopbar();
     const nodes = el.lyricsInner.children;
     if (!nodes.length || !el.lyrics.clientHeight) return;
     const i = idx < 0 ? 0 : Math.min(idx, nodes.length - 1);
