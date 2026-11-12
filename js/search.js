@@ -114,7 +114,6 @@ function renderResults() {
   });
 }
 
-const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 async function readPlayer() {
   try { const r = await api('GET', '/me/player?additional_types=episode'); return r.status === 200 ? await r.json() : null; } catch (e) { return null; }
 }

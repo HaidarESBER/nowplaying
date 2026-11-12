@@ -54,3 +54,15 @@ test('every element id read via $("...") in js/ exists in index.html', () => {
   const missing = [...new Set(used)].filter((i) => !ids.has(i));
   assert.deepStrictEqual(missing, []);
 });
+
+test('no top-level name is declared twice across the scripts (a clash breaks the whole second file)', () => {
+  const seen = new Map(), dup = [];
+  for (const f of jsFiles) {
+    for (const m of read(f).matchAll(/^(?:async\s+)?(?:const|let|var|function\*?)\s+([A-Za-z_$][\w$]*)/gm)) {
+      const n = m[1];
+      if (seen.has(n) && seen.get(n) !== f) dup.push(`${n} (${seen.get(n)} and ${f})`);
+      else seen.set(n, f);
+    }
+  }
+  assert.deepStrictEqual(dup, []);
+});
