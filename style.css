@@ -460,15 +460,16 @@ body.gn-rock .ln.act[data-v="1"]::after  { clip-path: polygon(0 66%, 100% 38%, 1
 body.gn-electronic {
   --h1: 190; --h2: 300; --h3: 262; --pulse: .9s;
   --gfont: "NP Kufi", "Segoe UI", "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
-  --gcol: hsl(var(--h1) 100% 96%); --gshadow: -2px 0 var(--ca8), 2px 0 var(--cb8), 0 0 18px var(--cc8);
-  --v0: gn-glitch .55s steps(3) both, gn-chroma 1.6s ease-in-out .55s infinite alternate;
-  --v1: gn-rgbslide .7s ease-out both, gn-chroma 1.6s ease-in-out .7s infinite alternate;
-  --v2: gn-scan .8s steps(12) both, gn-chroma 1.6s ease-in-out .8s infinite alternate;
-  --v3: gn-strobe .7s steps(1) both, gn-chroma 1.6s ease-in-out .7s infinite alternate;
+  --gcol: hsl(var(--h1) 100% 96%); --gshadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 8px var(--cc5), 0 1px 2px rgba(0,0,0,.6);
+  --v0: gn-glitch .55s steps(3) both;
+  --v1: gn-rgbslide .7s ease-out both;
+  --v2: gn-scan .8s steps(12) both;
+  --v3: gn-strobe .7s steps(1) both;
+  --vx: none;
 }
 body.gn-electronic .ln { text-transform: uppercase; letter-spacing: .05em; font-weight: 800; }
 @keyframes gn-glitch { 0% { transform: translateX(-16px) scale(var(--act)); clip-path: inset(0 0 62% 0); opacity: .4; } 33% { transform: translateX(13px) scale(var(--act)); clip-path: inset(42% 0 0 0); opacity: .9; } 66% { transform: translateX(-6px) scale(var(--act)); clip-path: inset(0 0 20% 0); } 100% { transform: translateX(0) scale(var(--act)); clip-path: inset(0); opacity: 1; } }
-@keyframes gn-rgbslide { 0% { opacity: 0; text-shadow: -46px 0 var(--ca), 46px 0 var(--cb), 0 0 18px var(--cc8); } 100% { opacity: 1; text-shadow: -2px 0 var(--ca8), 2px 0 var(--cb8), 0 0 18px var(--cc8); } }
+@keyframes gn-rgbslide { 0% { opacity: 0; text-shadow: -46px 0 var(--ca), 46px 0 var(--cb), 0 0 18px var(--cc8), 0 1px 2px rgba(0,0,0,.6); } 100% { opacity: 1; text-shadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 8px var(--cc5), 0 1px 2px rgba(0,0,0,.6); } }
 @keyframes gn-scan { 0% { clip-path: inset(0 0 100% 0); filter: brightness(3); } 100% { clip-path: inset(0); filter: brightness(1); } }
 @keyframes gn-strobe { 0% { transform: scale(calc(var(--act) * .4)); opacity: 0; } 12% { transform: scale(calc(var(--act) * 1.2)); opacity: 1; filter: brightness(4); } 24% { transform: scale(calc(var(--act) * .8)); opacity: .3; filter: brightness(1); } 36% { transform: scale(calc(var(--act) * 1.1)); opacity: 1; filter: brightness(3); } 55%, 100% { transform: scale(var(--act)); opacity: 1; filter: brightness(1); } }
 @keyframes gn-chroma { from { text-shadow: -1px 0 var(--ca8), 1px 0 var(--cb8), 0 0 14px var(--cc5); } to { text-shadow: -4px 0 var(--ca), 4px 0 var(--cb), 0 0 26px var(--cc8); } }
@@ -596,7 +597,7 @@ body[class*="gn-"] .ln.act[data-v="x"] { animation: var(--vx, none); }
 body.gn-hiphop     { --vx: gn-pump .67s ease-in-out infinite; }
 body.gn-montagem   { --vx: mg-beat .46s ease-in-out infinite; }
 body.gn-rock       { --vx: gn-glow 1.2s ease-in-out infinite alternate; }
-body.gn-electronic { --vx: gn-chroma 1.6s ease-in-out infinite alternate; }
+body.gn-electronic { --vx: none; }
 body.gn-classical  { --vx: gn-gleam 4s ease-in-out infinite alternate; }
 body.gn-chill      { --vx: gn-float 7s ease-in-out infinite; }
 body.gn-soul       { --vx: gn-sway 4.2s ease-in-out infinite; }
