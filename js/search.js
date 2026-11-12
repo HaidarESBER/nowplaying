@@ -114,35 +114,69 @@ function renderResults() {
   });
 }
 
+const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+async function readPlayer() {
+  try { const r = await api('GET', '/me/player?additional_types=episode'); return r.status === 200 ? await r.json() : null; } catch (e) { return null; }
+}
+async function errWhy(r) {
+  try { const j = await r.clone().json(); return (j.error && (j.error.reason || j.error.message)) || ''; } catch (e) { return ''; }
+}
+// did Spotify really start what we asked for?
+const isPlayingIt = (j, it) => !!(j && j.is_playing && (it.kind === 'track'
+  ? (j.item && (j.item.id === it.id || (j.item.name === it.name && j.item.uri === it.uri)))
+  : (j.context && j.context.uri === it.uri)));
+
 async function playResult(it) {
   if (DEMO) { $('searchSheet').hidden = true; const i = DEMO_TRACKS.findIndex((d) => 'demo:' + d.id === it.uri); if (i >= 0) { demoIdx = i; demoLoad(i); } toast('Playing ' + it.name); return; }
   if (!it.uri) { toast('Spotify sent no link for this result'); return; }
-  const body = it.kind === 'track' ? { uris: [it.uri] } : { context_uri: it.uri };
-  // an idle device (the phone app went to the background) ignores a play command: make it the active device first
-  if (S.device && S.device.id && !S.device.is_active) {
-    try { await api('PUT', '/me/player', { device_ids: [S.device.id], play: false }); await new Promise((ok) => setTimeout(ok, 700)); } catch (e) { /* the play call below reports the problem */ }
+  srNote('Starting “' + it.name + '”…');
+  const log = [];
+  const dev = S.device && S.device.id ? S.device : null;
+  const q = (extra) => (extra ? '?' + extra : '');
+  const body = it.kind === 'track' ? { uris: [it.uri], position_ms: 0 } : { context_uri: it.uri };
+  let j = null;
+
+  // 1) the normal command (addressed to the known device only when it is idle)
+  let r = await api('PUT', '/me/player/play' + q(dev && !dev.is_active ? 'device_id=' + encodeURIComponent(dev.id) : ''), body).catch(() => null);
+  log.push('play: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
+  if (r && r.status === 403) { toast('This needs Spotify Premium'); $('searchSheet').hidden = false; }
+  if (r && r.status === 404 && dev) {                                   // no active device: wake the one we know, then ask again
+    const t = await api('PUT', '/me/player', { device_ids: [dev.id], play: true }).catch(() => null);
+    log.push('wake device: ' + (t ? t.status : 'no answer'));
+    await sleep(900);
+    r = await api('PUT', '/me/player/play', body).catch(() => null);
+    log.push('play again: ' + (r ? r.status + ' ' + (await errWhy(r)) : 'no answer'));
+  } else if (r && r.status === 404) { openLibrary('dev'); $('searchSheet').hidden = true; toast('Pick a device to play on first'); return; }
+  if (r && r.ok) { await sleep(1300); j = await readPlayer(); }
+
+  // 2) fallback for songs: put it first in the queue and skip to it
+  if (!isPlayingIt(j, it) && it.kind === 'track') {
+    const qa = await api('POST', '/me/player/queue?uri=' + encodeURIComponent(it.uri)).catch(() => null);
+    log.push('queue: ' + (qa ? qa.status + ' ' + (await errWhy(qa)) : 'no answer'));
+    if (qa && qa.ok) {
+      const nx = await api('POST', '/me/player/next').catch(() => null);
+      log.push('next: ' + (nx ? nx.status : 'no answer'));
+      await sleep(1500); j = await readPlayer();
+    }
   }
-  const r = await playerCall('PUT', '/me/player/play', body);
-  if (r && !r.ok && ![403, 404, 429].includes(r.status)) {
-    let why = ''; try { const j = await r.clone().json(); why = (j.error && (j.error.reason || j.error.message)) || ''; } catch (e) { /* no body */ }
-    toast('Spotify could not play that (' + r.status + (why ? ': ' + why : '') + ')');
-  }
-  if (r && r.ok) {
+
+  if (isPlayingIt(j, it)) {
     $('searchSheet').hidden = true;
     toast('Playing ' + it.name);
-    holdUI();
-    S.playing = true;
-    if (it.kind === 'track' && it.id) {                              // show the chosen song straight away; the polls below confirm it
-      if (S.screen !== 'player') show('player');
-      newTrack({ id: it.id, title: it.name, artist: it.sub, album: it.album, art: it.art, dur: it.dur, type: 'track', artistId: it.artistId });
-    }
-    S.anchor = { p: 0, t: Date.now() };
-    renderPlayState();
-    [700, 1800, 3500].forEach((ms) => setTimeout(poll, ms));         // Spotify takes a moment to report the new song
-    if (it.kind === 'track') setTimeout(() => {                      // say so if Spotify accepted the command but is not playing it
-      if (!S.playing || S.trackId !== it.id) toast('Spotify did not start it (' + it.uri + '). Open Spotify on your device, then try again');
-    }, 4500);
-  } else if (r && r.status === 404) {
-    $('searchSheet').hidden = true; openLibrary('dev'); toast('Pick a device to play on first');
+    setPlayer(j); setTimeout(poll, 1500);
+    return;
   }
+
+  // 3) it did not work: say exactly why, in the sheet
+  const d = (j && j.device) || dev || {};
+  const lines = [
+    'Spotify did not start “' + it.name + '”.',
+    'Device: ' + (d.name || 'none') + (d.type ? ' (' + d.type + ')' : '') + (d.is_restricted ? ', RESTRICTED: it ignores remote commands' : '') + (d.is_active === false ? ', idle' : ''),
+    'Spotify now plays: ' + (j && j.item ? j.item.name + (j.is_playing ? '' : ' (paused)') : 'nothing'),
+  ].concat(log);
+  const box = $('srList'); box.textContent = '';
+  lines.forEach((t, k) => { const p = document.createElement('p'); p.className = 'devNote'; p.textContent = t; if (k === 0) p.style.fontWeight = '700'; box.appendChild(p); });
+  const again = document.createElement('button'); again.className = 'pill'; again.textContent = 'Try again';
+  again.addEventListener('click', () => playResult(it)); box.appendChild(again);
+  setTimeout(poll, 500);
 }
