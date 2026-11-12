@@ -43,7 +43,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Volume**: swipe up or down on the cover (scroll wheel on desktop).
 - **Playlists**: the library button in the top bar lists your Spotify playlists; tap one to play it. The same sheet has a **Devices** tab to move playback to any of your Spotify Connect devices.
 - **Greets you by name**: the setup asks for your name once (skippable, editable in Settings), then a short "Good evening, name" appears every time you open the app, and on the idle screen.
-- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, G genre look preview, X replay line animation, F full screen, P playlists, D devices.
+- **Keyboard shortcuts** on desktop (press **?** for the list): Space play/pause, arrows to seek and change volume, N/B next/previous, M mute, S shuffle, R repeat, L like, T lyrics, Y lyric style, V another lyrics version, G genre look preview, X replay line animation, F full screen, P playlists, D devices.
 - **Five lyric styles** (Settings): **Scroll** (all lines), **Karaoke** (words light up as they're sung), **One line**, **Two lines** (current and next) and **Word by word** (words appear one at a time). LRCLIB only has line timings, so word timing is estimated from word length.
 - **Genre looks with expressive line animations**: the song's genre (looked up online: Apple Music search first, then MusicBrainz community tags, then the artist's Spotify genres; Settings shows what was found and where from) picks one of ten looks, and the colours come from the **album cover**. Each look has its own typeface and a set of entrances; every new line picks one at random (never the same twice in a row). Besides each look's four signature entrances, a small animation engine builds **cut-up lines** with random geometry every time, so no two cuts are alike. The pieces fly in tinted with the cover's colours and turn white as they lock onto the text, and they keep Arabic and other joined scripts intact:
   - **Katana**: a bright blade sweeps across, the line is cut along a random diagonal and the halves snap back together with a flash. **X-cut**: two blades, four pieces.
@@ -65,7 +65,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
 - **Full screen** (Settings -> Full screen; Android, desktop, iPad). On iPhone, install it to the home screen for a bar-free full screen.
 - **Idle mode**: a large clock when nothing is playing.
 - **Light on the network**: one Spotify request every ~3.5 s while playing, every 8 s when paused, none in the background.
-- **Private**: your Spotify login stays in your browser (PKCE, no client secret). The only other request is one lyrics lookup per song.
+- **Private**: your Spotify login stays in your browser (PKCE, no client secret). The lyrics come from LRCLIB (2 to 3 small requests per song).
 
 ## Set it up (10 minutes, free)
 
@@ -120,6 +120,7 @@ Add `?demo` to the address. `?demo=idle` and `?demo=setup` show the other screen
 | Screen turns off on iPhone | Screen Wake Lock needs iOS 16.4+, and works best from the home-screen app. |
 | Full screen (in Settings) shows a guide on iPhone | Safari can't do real full screen. Use the home-screen app instead. |
 | No lyrics for a song | LRCLIB doesn't have every track. The cover layout is used instead. |
+| The lyrics are wrong or have typos | LRCLIB is community-made and often holds several different versions of one song. Press **V** to try the next one (Settings shows which version you're on); it is remembered for that song. |
 
 ## How it works
 
@@ -129,7 +130,7 @@ Plain HTML, CSS and JS in three files (`index.html`, `style.css`, `app.js`), no 
 
 - **Auth**: Spotify Authorization Code with PKCE. Only your Client ID is stored, in `localStorage`; there is no secret to leak.
 - **State**: polls `GET /v1/me/player` and interpolates the progress locally between polls. Controls are `PUT/POST /v1/me/player/*`, with an optimistic play/pause toggle.
-- **Lyrics**: LRCLIB `get` with a `search` fallback, parsed from LRC, scrolled with the DOM.
+- **Lyrics**: LRCLIB is a community database where one song can have a dozen uploads with different texts. The app collects all candidates (`get` + `search`), scores each against the real song (title, artist, album, duration, and whether its uploads have sane durations), merges identical copies, and picks the best. **Press V** (or Settings -> Lyrics version -> Try another) to switch to another version if the lyrics look wrong; your choice is remembered per song.
 - **Layout**: CSS grid areas per orientation, with and without lyrics.
 
 ## Limits

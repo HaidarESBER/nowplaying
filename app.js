@@ -397,29 +397,98 @@
     return out.sort((a, b) => a.t - b.t);
   }
 
+  // ------------------------------------------------------------------ lyrics from LRCLIB: choose the best version
+  // LRCLIB is a community database: one song can have a dozen uploads by different people, filed under different artists
+  // and titles, and their texts really differ (typos, missing ad-libs, even different words). So we collect every candidate,
+  // score each against the real song (title, artist, album, duration), merge identical copies (the more uploads agree, the
+  // more likely it is right), pick the best, and let the user switch to another version (key V or Settings), remembered per song.
+  const lyrKey = (t) => 'lyrpick:' + norm(String(t.artist || '').split(',')[0]) + '|' + norm(t.title);
+
+  function scoreLyr(r, t) {
+    const names = String(t.artist || '').split(/,\s*/).filter(Boolean).map(norm);
+    const rt = norm(r.trackName), tt = norm(t.title), ra = norm(r.artistName);
+    let sc = 0;
+    sc += rt === tt ? 4 : (rt && tt && (rt.includes(tt) || tt.includes(rt))) ? 2 : sameName(rt, tt) ? 1 : -2;
+    sc += names.some((n) => ra === n || sameName(ra, n)) ? 3 : names.some((n) => n && ra.includes(n)) ? 2 : 0;
+    if (t.album && norm(r.albumName) === norm(t.album)) sc += 1;
+    if (r.duration) { const dd = Math.abs(r.duration - (t.dur || 0) / 1000); sc += dd <= 2 ? 3 : dd <= 6 ? 1 : -3; }
+    if (r.instrumental) sc -= 5;
+    return sc;
+  }
+
+  async function lyricCandidates(t, get) {
+    const q = 'track_name=' + encodeURIComponent(t.title) + '&artist_name=' + encodeURIComponent(String(t.artist || '').split(',')[0]);
+    const all = new Map();
+    const add = (r) => { if (r && r.id != null && r.syncedLyrics && !all.has(r.id)) all.set(r.id, r); };
+    add(await get('https://lrclib.net/api/get?' + q + (t.album ? '&album_name=' + encodeURIComponent(t.album) : '') + (t.dur ? '&duration=' + Math.round(t.dur / 1000) : '')));
+    ((await get('https://lrclib.net/api/search?' + q)) || []).forEach(add);
+    if (all.size < 3) ((await get('https://lrclib.net/api/search?q=' + encodeURIComponent((t.title + ' ' + String(t.artist || '').split(',')[0]).trim()))) || []).forEach(add);
+    const groups = new Map();
+    all.forEach((r) => {
+      const lines = parseLrc(r.syncedLyrics);
+      if (!lines.length) return;
+      const sig = lines.map((l) => norm(l.s)).join('|');
+      const g = groups.get(sig) || { recs: [], lines };
+      g.recs.push(r); groups.set(sig, g);
+    });
+    const out = Array.from(groups.values()).map((g) => {
+      g.recs.sort((a, b) => scoreLyr(b, t) - scoreLyr(a, t));
+      g.best = g.recs[0]; g.n = g.recs.length;
+      // uploads with a missing / wrong duration are usually sloppy copies; many identical uploads only mean one text was copied a lot
+      const sane = g.recs.filter((r) => r.duration && Math.abs(r.duration - (t.dur || 0) / 1000) <= 6).length / g.n;
+      g.score = scoreLyr(g.best, t) + 2 * sane + Math.min(g.n - 1, 4) * 0.15;
+      return g;
+    });
+    out.sort((a, b) => b.score - a.score || b.lines.length - a.lines.length);
+    return out;
+  }
+  if (DEMO) window.__npLoadLyrics = (t) => loadLyrics(t);
+  if (DEMO) window.__npLyrics = (t) => lyricCandidates(t, async (u) => { const r = await fetch(u); return r.ok ? r.json() : null; });
+
+  function lyrDescribe() {
+    const L = S.lyr;
+    if (!L) return S.lyrInfo || '';
+    const g = L.cands[L.idx];
+    return 'Version ' + (L.idx + 1) + ' of ' + L.cands.length + ' · ' + g.best.artistName + ' — ' + g.best.trackName + ' (' + g.lines.length + ' lines' + (g.n > 1 ? ', ' + g.n + ' identical uploads' : '') + ')';
+  }
+  function updateLyrInfo() { const e = $('lyrInfo'); if (e) e.textContent = lyrDescribe() || 'No lyrics yet'; }
+
+  async function useLyricVersion(i, remember) {
+    const L = S.lyr; if (!L) return;
+    L.idx = i;
+    const g = L.cands[i];
+    if (remember) store.set(lyrKey(L.t), String(g.best.id));
+    if (g.lines.some((l) => /[؀-ۿ]/.test(l.s))) await loadArabicFonts();
+    if (S.lyr !== L) return;
+    setLyrics(g.lines);
+    updateLyrInfo();
+  }
+  function nextLyricVersion() {
+    const L = S.lyr;
+    if (!L || L.cands.length < 2) { toast(L ? 'Only one version of these lyrics was found' : 'No lyrics to switch'); return; }
+    useLyricVersion((L.idx + 1) % L.cands.length, true);
+    toast(lyrDescribe());
+  }
+
   async function loadLyrics(t) {
     if (S.lyricAbort) S.lyricAbort.abort();
     const ac = new AbortController(); S.lyricAbort = ac;
-    const q = 'track_name=' + encodeURIComponent(t.title) + '&artist_name=' + encodeURIComponent((t.artist || '').split(',')[0]);
+    S.lyr = null; S.lyrInfo = 'Looking up the lyrics…'; updateLyrInfo();
     const get = async (url) => {
       const r = await fetch(url, { signal: ac.signal });
       return r.ok ? r.json() : null;
     };
     try {
-      let lines = null;
-      const exact = await get('https://lrclib.net/api/get?' + q +
-        (t.album ? '&album_name=' + encodeURIComponent(t.album) : '') + (t.dur ? '&duration=' + Math.round(t.dur / 1000) : ''));
-      if (exact && exact.syncedLyrics) lines = parseLrc(exact.syncedLyrics);
-      if (!lines || !lines.length) {
-        const list = await get('https://lrclib.net/api/search?' + q);
-        for (const it of (list || [])) { const l = parseLrc(it.syncedLyrics); if (l.length) { lines = l; break; } }
-      }
+      const cands = await lyricCandidates(t, get);
       if (S.trackId !== t.id) return;
-      if (lines && lines.length && lines.some((l) => /[؀-ۿ]/.test(l.s))) await loadArabicFonts();   // no typeface swap in the middle of a line
-      if (S.trackId !== t.id) return;
-      if (lines && lines.length) setLyrics(lines); else clearLyrics();
+      if (!cands.length) { S.lyrInfo = 'No timed lyrics found for this song'; updateLyrInfo(); clearLyrics(); return; }
+      let idx = 0;
+      const picked = store.get(lyrKey(t));                             // a version you chose earlier wins
+      if (picked) { const k = cands.findIndex((g) => g.recs.some((r) => String(r.id) === picked)); if (k >= 0) idx = k; }
+      S.lyr = { cands, idx, t };
+      await useLyricVersion(idx, false);
     } catch (e) {
-      if (S.trackId === t.id && !ac.signal.aborted) clearLyrics();   // offline: simply no lyrics
+      if (S.trackId === t.id && !ac.signal.aborted) { S.lyrInfo = 'Could not reach the lyrics service'; updateLyrInfo(); clearLyrics(); }   // offline: simply no lyrics
     }
   }
 
@@ -1491,7 +1560,7 @@
   const SHORTCUTS = [
     [['Space'], 'Play / pause'], [['←', '→'], 'Back / forward 5 s'], [['Shift', '← →'], 'Previous / next song'],
     [['N', 'B'], 'Next / previous song'], [['↑', '↓'], 'Volume up / down'], [['M'], 'Mute'],
-    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'], [['X'], 'Replay the line with another animation'],
+    [['S'], 'Shuffle'], [['R'], 'Repeat'], [['L'], 'Like'], [['T'], 'Show / hide lyrics'], [['Y'], 'Next lyric style'], [['G'], 'Preview a genre look'], [['X'], 'Replay the line with another animation'], [['V'], 'Try another version of the lyrics'],
     [['F'], 'Full screen'], [['P'], 'Playlists'], [['D'], 'Devices'], [[','], 'Settings'], [['?'], 'This list'], [['Esc'], 'Close a panel'],
   ];
   (() => {
@@ -1556,6 +1625,7 @@
       case 'y': case 'Y': cycleLyricStyle(); break;
       case 'g': case 'G': cycleGenreLook(); break;
       case 'x': case 'X': cycleFx(); break;
+      case 'v': case 'V': nextLyricVersion(); break;
       case 'f': case 'F': toggleFullscreen(); break;
       case 'p': case 'P': openLibrary('pl'); break;
       case 'd': case 'D': openLibrary('dev'); break;
@@ -1606,7 +1676,7 @@
   }
   function syncSettingsUI() {
     $('cfgGenre').checked = cfg.genre;
-    updateGenreInfo();
+    updateGenreInfo(); updateLyrInfo();
     $('cfgClock').checked = cfg.clock; $('cfgAwake').checked = cfg.awake; $('cfgHide').checked = cfg.autohide;
     document.querySelectorAll('#cfgStyle button').forEach((b) => b.classList.toggle('on', b.dataset.v === cfg.lstyle));
     document.querySelectorAll('#cfgSize button').forEach((b) => b.classList.toggle('on', parseFloat(b.dataset.v) === cfg.lscale));
@@ -1619,6 +1689,7 @@
   $('cfgAwake').addEventListener('change', (e) => { cfg.awake = e.target.checked; saveCfg(); applyCfg(); });
   $('cfgName').addEventListener('change', (e) => { store.set('name', e.target.value.trim().slice(0, 24)); renderIdleGreet(); renderAmbient(); });
   $('cfgKeys').addEventListener('click', () => { el.setSheet.hidden = true; $('helpSheet').hidden = false; });
+  $('cfgLyrNext').addEventListener('click', nextLyricVersion);
   $('cfgGenre').addEventListener('change', (e) => {
     cfg.genre = e.target.checked; saveCfg(); applyGenre(); syncSettingsUI();
     if (cfg.genre && S.track && !S.gfam) loadGenre(S.track);
