@@ -286,34 +286,11 @@ function lineBurst(fam) {
   }
 }
 
-// sparks shoot out of both ends of the new line, in the song's colours
-function montagemSparks() {
-  const act = el.lyricsInner.querySelector('.ln.act');
-  if (!act || S.screen !== 'player') return;
-  let box = document.getElementById('mgFx');
-  if (!box) { box = document.createElement('div'); box.id = 'mgFx'; document.body.appendChild(box); }
-  if (box.children.length > 36) return;
-  const r = act.getBoundingClientRect();
-  const cy = r.top + r.height / 2, vw = window.innerWidth;
-  for (let k = 0; k < 16; k++) {
-    const left = k % 2 === 0, ang = (Math.random() - .5) * 2.2, dist = 90 + Math.random() * 230;
-    const dx = Math.cos(ang) * dist * (left ? -1 : 1), dy = Math.sin(ang) * dist * .8;
-    const d = document.createElement('i'); d.className = 'mgspark';
-    d.style.left = Math.max(8, Math.min(vw - 8, left ? r.left + 6 : r.right - 6)) + 'px';
-    d.style.top = cy + 'px';
-    d.style.setProperty('--tx', dx.toFixed(0) + 'px'); d.style.setProperty('--ty', dy.toFixed(0) + 'px');
-    d.style.setProperty('--rot', Math.round(Math.atan2(dy, dx) * 180 / Math.PI + 90) + 'deg');
-    d.style.setProperty('--c', ['var(--ca)', 'var(--cb)', 'var(--cc)', '#fff'][k % 4]);
-    d.addEventListener('animationend', () => d.remove());
-    box.appendChild(d);
-  }
-}
-
 function startLineFx(n, forced) {
   clearFx(n);
   forced = forced || S.fxForce;
   const fam = activeFam();
-  if (fam === 'montagem' && !REDUCED) { montagemHit(); requestAnimationFrame(montagemSparks); }
+  if (fam === 'montagem' && !REDUCED) montagemHit();
   else if (fam && !REDUCED && BURST[fam]) requestAnimationFrame(() => lineBurst(fam));
   const pool = poolFor(fam, n, !!forced);
   if (!fam || REDUCED || !pool.length) { n.dataset.v = '0'; return; }
