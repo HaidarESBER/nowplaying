@@ -6,7 +6,7 @@
 // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
 // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
 const GENRE_RULES = [
-  ['montagem', /montagem|phonk|funk carioca|funk brasileiro|brazilian funk|baile funk|funk mandela|funk bh|mega funk|funk ostenta|trap funk|tecnofunk|brazilian bass|favela funk|\btrap\b(?! soul)|\brage\b/],   // montagem, phonk, trap: the over-the-top look, before hip-hop and funk can claim them
+  ['montagem', /montagem|phonk|funk carioca|funk brasileiro|brazilian funk|baile funk|funk mandela|funk bh|mega funk|funk ostenta|trap funk|tecnofunk|brazilian bass|favela funk|funk mtg|\bmtg\b|funk paulista|hyperphonk|\btrap\b(?! soul)|\brage\b/],   // montagem, phonk, trap: the over-the-top look, before hip-hop and funk can claim them
   ['arabic', /classic arab|arabic classical|arab classical|arab folk|arabic folk|\btarab\b|andalusian|maqam|\boud\b|qawwali/],   // traditional Arabic music: before "classical" and "pop" can claim it
   ['hiphop', /hip.?hop|\brap\b|trap|drill|grime|boom bap|crunk|phonk/],
   ['rock', /metal|rock|punk|grunge|hardcore|\bemo\b|garage/],
@@ -124,13 +124,39 @@ async function genreFromSpotify(artistId, why) {
   return gs.length ? gs : null;
 }
 
+// Montagem hides behind broader labels: Apple Music files a lot of phonk / funk carioca under Dance, Electronic or Hip-Hop, so
+// a song whose own label says one of those is checked again against the artist's Spotify genres and community tags.
+const MONTAGEM_TITLE = /montagem|phonk|mandel[a\u00e3]o|automotivo|\bmtg\b|funk (do|da|de) /i;
+const MONTAGEM_RE = GENRE_RULES[0][1];
+const MONTAGEM_HIDES_IN = ['', 'electronic', 'hiphop', 'pop', 'soul', 'tropical'];
 async function detectGenre(t) {
+  const r = await detectBase(t);
+  if (r.fam === 'montagem' || MONTAGEM_HIDES_IN.indexOf(r.fam) < 0) return r;
   const names = String(t.artist || '').split(/,\s*/).filter(Boolean);
-  const key = 'gv2:' + norm(names[0]) + '|' + norm(t.title);
+  let hit = '';
+  try {
+    const gs = await genreFromSpotify(t.artistId, []);
+    const m = (gs || []).find((g) => MONTAGEM_RE.test(String(g).toLowerCase()));
+    if (m) hit = 'Spotify (' + m + ')';
+    if (!hit && names[0]) {
+      const tags = await genreFromMusicBrainz(names[0]);
+      const m2 = (tags || []).find((g) => MONTAGEM_RE.test(String(g).toLowerCase()));
+      if (m2) hit = 'MusicBrainz (' + m2 + ')';
+    }
+  } catch (e) { /* keep the first answer */ }
+  if (!hit) return r;
+  const up = { fam: 'montagem', raw: hit.replace(/^.*\(|\)$/g, ''), src: hit.split(' (')[0], why: 'was ' + (r.raw || 'unknown') + ' at first', at: Date.now() };
+  store.set('gv3:' + norm(names[0]) + '|' + norm(t.title), JSON.stringify(up));
+  return up;
+}
+
+async function detectBase(t) {
+  const names = String(t.artist || '').split(/,\s*/).filter(Boolean);
+  const key = 'gv3:' + norm(names[0]) + '|' + norm(t.title);
   let c = null;
   try { c = JSON.parse(store.get(key) || 'null'); } catch (e) { c = null; }
   if (c && (c.fam || Date.now() - c.at < 30 * 60 * 1000)) return c;     // misses are retried after 30 minutes
-  if (/montagem|phonk|mandel[a\u00e3]o|automotivo|funk (do|da|de) /i.test(t.title || '')) {       // the title alone says it
+  if (MONTAGEM_TITLE.test(t.title || '')) {       // the title alone says it
     const r = { fam: 'montagem', raw: 'montagem', src: 'song title', why: 'the title says montagem / phonk', at: Date.now() };
     store.set(key, JSON.stringify(r));
     return r;
@@ -187,6 +213,19 @@ function lyricsScriptHint() {                                    // no genre fou
   if (by) { S.gfam = 'arabic'; S.ginfo = 'Arabic \u00b7 via ' + by + ' (Arabic script)'; applyGenre(); updateGenreInfo(); }
 }
 
+// Brazilian funk / montagem is filed under "Electronic" by Apple Music and is sung in Portuguese: an electronic track whose
+// lyrics are mostly Portuguese gets the montagem look (checked when the lyrics arrive, since the genre lookup runs first)
+const PT_WORDS = /\b(n[aã]o|voc[eê]|t[aá]|pra|pro|s[oó]|mais|muito|vai|vem|com|mesmo|quer|essa|esse|meu|minha|tudo|nada|agora|j[aá]|fa[cç]o|bunda|novinha|mandela)\b/i;
+function lyricsLanguageHint() {
+  if (S.gfam !== 'electronic' || !cfg.genre || !S.track || !S.lines || S.lines.length < 6) return;
+  const pt = S.lines.filter((l) => PT_WORDS.test(l.s || '')).length;
+  if (pt < S.lines.length * 0.4) return;
+  S.gfam = 'montagem'; S.ginfo = FAM_NAMES.montagem + ' · via Portuguese lyrics on an electronic track';
+  const t = S.track, names = String(t.artist || '').split(/,\s*/).filter(Boolean);
+  store.set('gv3:' + norm(names[0]) + '|' + norm(t.title), JSON.stringify({ fam: 'montagem', raw: 'Portuguese lyrics', src: 'the lyrics', why: 'was Electronic at first', at: Date.now() }));
+  applyGenre(); updateGenreInfo();
+}
+
 function updateGenreInfo() { const g = $('genreInfo'); if (g) g.textContent = S.ginfo || 'Waiting for a song'; }
 
 async function loadGenre(t) {
@@ -203,6 +242,7 @@ async function loadGenre(t) {
   S.ginfo = r.fam ? FAM_NAMES[r.fam] + ' · via ' + r.src + (r.raw ? ' (' + r.raw + ')' : '')
                   : 'No genre found' + (r.why ? ' — ' + r.why : '');
   applyGenre(); updateGenreInfo();
+  lyricsLanguageHint();                                            // the lyrics may have arrived before the genre did
 }
 
 function cycleGenreLook() {                                      // G: preview every look (auto -> each family -> auto)

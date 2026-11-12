@@ -129,6 +129,7 @@ function loadArabicFonts() {
 function setLyrics(lines) {
   S.lines = lines; S.lineIdx = -3;
   if (typeof lyricsScriptHint === 'function') lyricsScriptHint();
+  if (typeof lyricsLanguageHint === 'function') lyricsLanguageHint();
   renderLyrics();
   tickClock(); renderAmbient();
   updateLyricLine(position());
