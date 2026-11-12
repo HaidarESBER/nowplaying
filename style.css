@@ -711,3 +711,20 @@ body.chrome-off #ambient { opacity: 1; transform: translateX(-50%); transition: 
 }
 body.chrome-off { cursor: none; }                  /* desktop: the pointer hides too until it moves */
 @media (prefers-reduced-motion: reduce) { #ambient, #clock, #tools { transition-duration: .01s !important; } }
+
+/* =====================================================================================================
+   Calm mode, layout: when the buttons hide, everything settles down into the space the play / next row
+   occupied (its exact height: the play button + the row's top margin). A touch brings the buttons back and
+   everything rises to where it was. In landscape the lyrics column is not part of the bottom stack, so it stays.
+   ===================================================================================================== */
+body { --drop: calc(var(--play) + 8px); }
+#coverWrap, #meta, #controls, #lyrics { transition: opacity .22s ease, transform .7s cubic-bezier(.22, .8, .3, 1); }
+#controls { transition: opacity .6s ease, transform .7s cubic-bezier(.22, .8, .3, 1); }
+#lyrics { transition: opacity .35s ease, transform .7s cubic-bezier(.22, .8, .3, 1); }
+body.chrome-off #coverWrap, body.chrome-off #meta, body.chrome-off #controls { transform: translateY(var(--drop)); transition-duration: .22s, 1s; }
+body.chrome-off #controls { transition-duration: .6s, 1s; }
+@media (orientation: landscape) {                 /* big centred cover: sink only as far as the free space below it allows */
+  body.chrome-off:not(.lyrics) #coverWrap { transform: translateY(min(var(--drop), max(0px, calc((100vh - var(--cover)) / 2 - 14px)))); }
+}
+@media (orientation: portrait) { body.chrome-off #lyrics { transform: translateY(var(--drop)); transition-duration: .35s, 1s; } }
+@media (prefers-reduced-motion: reduce) { #coverWrap, #meta, #controls, #lyrics { transition-duration: .01s !important; } }
