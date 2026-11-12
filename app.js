@@ -1265,11 +1265,11 @@
   }
 
   // ------------------------------------------------------------------ the phrase shown while the buttons are hidden
-  function renderAmbient() {
-    const n = getName(), ar = S.screen === 'player' && arabicSong();
-    $('ambMain').textContent = ar ? ('مرحباً ' + n).trim() + '،' : (n ? 'Hi ' + n + ',' : 'Hi there,');
-    $('ambSub').textContent = ar ? 'أنت تستمع الآن إلى:' : 'you’re now listening to:';
-    $('ambient').dir = ar ? 'rtl' : 'ltr';
+  function renderAmbient() {                                      // always English, whatever the song's language
+    const n = getName();
+    $('ambMain').textContent = n ? 'Hi ' + n + ',' : 'Hi there,';
+    $('ambSub').textContent = 'you’re now listening to:';
+    $('ambient').dir = 'ltr';
   }
   renderAmbient();
 
