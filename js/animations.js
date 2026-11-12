@@ -76,6 +76,7 @@ const FX_LABEL = { katana: 'Katana slash', xcut: 'X-cut', shatter: 'Shatter', te
   v0: 'Signature 1', v1: 'Signature 2', v2: 'Signature 3', v3: 'Signature 4' };
 // each look draws from its own set (v0-v3 are the look's own CSS signature entrances)
 const FX_POOL = {
+  montagem:   ['v0', 'v1', 'v2', 'v3', 'glitch', 'shatter', 'katana', 'xcut', 'zip', 'chop', 'tear', 'blinds'],
   hiphop:     ['v0', 'v1', 'v2', 'v3', 'chop', 'zip', 'katana', 'blinds'],
   rock:       ['v0', 'v1', 'v2', 'v3', 'katana', 'xcut', 'shatter', 'tear', 'blinds'],
   electronic: ['v0', 'v1', 'v2', 'v3', 'glitch', 'blinds', 'zip', 'shatter'],
@@ -224,10 +225,18 @@ function poolFor(fam, n, ignoreWords) {
 }
 
 // choose the entrance for a line that just became active (never the same twice in a row)
+// montagem: every new line hits the whole screen (a zoom punch and a colour flash)
+function montagemHit() {
+  const b = document.body;
+  b.classList.remove('mg-hit'); void b.offsetWidth; b.classList.add('mg-hit');
+  clearTimeout(montagemHit.t); montagemHit.t = setTimeout(() => b.classList.remove('mg-hit'), 420);
+}
+
 function startLineFx(n, forced) {
   clearFx(n);
   forced = forced || S.fxForce;
   const fam = activeFam();
+  if (fam === 'montagem' && !REDUCED) montagemHit();
   const pool = poolFor(fam, n, !!forced);
   if (!fam || REDUCED || !pool.length) { n.dataset.v = '0'; return; }
   let t = forced;

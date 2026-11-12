@@ -6,6 +6,7 @@
 // The artist's Spotify genres pick a "family"; the family decides the lyric typeface, glow, entrance animation
 // and a soft drifting background (all CSS, see style.css). One lookup per new artist, cached in this browser.
 const GENRE_RULES = [
+  ['montagem', /montagem|phonk|funk carioca|funk brasileiro|brazilian funk|baile funk|funk mandela|funk bh|mega funk|funk ostenta|trap funk|tecnofunk|brazilian bass|favela funk|\btrap\b(?! soul)|\brage\b/],   // montagem, phonk, trap: the over-the-top look, before hip-hop and funk can claim them
   ['arabic', /classic arab|arabic classical|arab classical|arab folk|arabic folk|\btarab\b|andalusian|maqam|\boud\b|qawwali/],   // traditional Arabic music: before "classical" and "pop" can claim it
   ['hiphop', /hip.?hop|\brap\b|trap|drill|grime|boom bap|crunk|phonk/],
   ['rock', /metal|rock|punk|grunge|hardcore|\bemo\b|garage/],
@@ -21,7 +22,7 @@ const GENRE_RULES = [
   ['rock', /alternative|indie rock|britpop/],                 // weak match: only when nothing more specific fits
 ];
 const FAMS = GENRE_RULES.map((r) => r[0]).filter((v, i, a) => a.indexOf(v) === i);
-const FAM_NAMES = { hiphop: 'Hip-hop', rock: 'Rock', electronic: 'Electronic', classical: 'Classical & jazz', chill: 'Lo-fi & chill',
+const FAM_NAMES = { montagem: 'Montagem, phonk & trap', hiphop: 'Hip-hop', rock: 'Rock', electronic: 'Electronic', classical: 'Classical & jazz', chill: 'Lo-fi & chill',
   soul: 'R&B & soul', country: 'Country & folk', arabic: 'Arabic', tropical: 'Latin & reggae', pop: 'Pop' };
 const familyOf = (gs) => {
   const l = (gs || []).map((g) => String(g).toLowerCase());
@@ -129,6 +130,11 @@ async function detectGenre(t) {
   let c = null;
   try { c = JSON.parse(store.get(key) || 'null'); } catch (e) { c = null; }
   if (c && (c.fam || Date.now() - c.at < 30 * 60 * 1000)) return c;     // misses are retried after 30 minutes
+  if (/montagem|phonk|mandel[a\u00e3]o|automotivo|funk (do|da|de) /i.test(t.title || '')) {       // the title alone says it
+    const r = { fam: 'montagem', raw: 'montagem', src: 'song title', why: 'the title says montagem / phonk', at: Date.now() };
+    store.set(key, JSON.stringify(r));
+    return r;
+  }
   const why = [];
   const done = (fam, raw, src) => {
     const r = { fam, raw, src, why: why.join('; '), at: Date.now() };

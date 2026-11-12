@@ -593,6 +593,7 @@ body.gn-pop .ln { font-weight: 800; }
 /* after an engine effect, only the look's idle loop runs (so the CSS entrance doesn't replay) */
 body[class*="gn-"] .ln.act[data-v="x"] { animation: var(--vx, none); }
 body.gn-hiphop     { --vx: gn-pump .67s ease-in-out infinite; }
+body.gn-montagem   { --vx: mg-beat .46s ease-in-out infinite; }
 body.gn-rock       { --vx: gn-glow 1.2s ease-in-out infinite alternate; }
 body.gn-electronic { --vx: gn-chroma 1.6s ease-in-out infinite alternate; }
 body.gn-classical  { --vx: gn-gleam 4s ease-in-out infinite alternate; }
@@ -810,3 +811,105 @@ body.gn-country #clock, body.gn-classical #clock, body.gn-arabic #clock { letter
 }
 @media (max-height: 520px) { #srCard { height: 100%; border-radius: 18px; } .dev.sr.top img { width: 64px; height: 64px; } }
 @media (prefers-reduced-motion: reduce) { #srCard, .srSk i, .srSk b, .srSk small { animation: none; } }
+
+
+/* =====================================================================================================
+   MONTAGEM / PHONK / TRAP: over the top. Everything locks to a ~130 BPM beat (--pulse .46s):
+   the lyric line slams in and keeps punching, the cover pumps with colour-split edges, the screen flashes
+   (soft, under 3 per second, never full white) and a sunburst spins behind. Off with reduced motion.
+   ===================================================================================================== */
+body.gn-montagem {
+  --h1: 318; --h2: 178; --h3: 58; --pulse: .46s;
+  --gfont: "NP Kufi", Impact, Haettenschweiler, "Arial Narrow Bold", "sans-serif-black", "Arial Black", sans-serif;
+  --gcol: #fff;
+  --gshadow: -3px 0 0 var(--cb), 3px 0 0 var(--ca), 0 3px 0 #000, 0 0 22px var(--ca8), 0 0 54px var(--cb5);
+  --v0: mg-bang .5s cubic-bezier(.2,1.5,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
+  --v1: mg-glitch .55s steps(1) both, mg-beat .46s ease-in-out .55s infinite;
+  --v2: mg-zoom .5s cubic-bezier(.2,1.4,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
+  --v3: mg-whip .5s cubic-bezier(.2,1.2,.3,1) both, mg-beat .46s ease-in-out .5s infinite;
+  --vx: mg-beat .46s ease-in-out infinite;
+}
+body.gn-montagem .ln { text-transform: uppercase; font-style: italic; letter-spacing: .01em; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+body.gn-montagem .ln.rtl { font-style: normal; }
+body.gn-montagem .bg { filter: blur(60px) saturate(2.2) brightness(.42); }
+body.gn-montagem #title { text-transform: uppercase; font-style: italic; animation: mg-title .92s steps(1) infinite; }
+body.gn-montagem #clock { color: #fff; text-shadow: -2px 0 var(--cb), 2px 0 var(--ca); animation: mg-title .92s steps(1) infinite; }
+
+/* the line itself */
+@keyframes mg-beat {
+  0%, 100% { transform: scale(var(--act)) translate(0, 0) rotate(0); filter: none; }
+  6%  { transform: scale(calc(var(--act) * 1.13)) translate(-4px, 1px) rotate(-.7deg); filter: brightness(1.5); }
+  14% { transform: scale(calc(var(--act) * 1.05)) translate(4px, -1px) rotate(.7deg); filter: none; }
+  28% { transform: scale(var(--act)) translate(0, 0) rotate(0); }
+  55% { transform: scale(calc(var(--act) * 1.04)) translate(2px, 0) rotate(.3deg); }
+  62% { transform: scale(var(--act)); }
+}
+@keyframes mg-bang {
+  0% { transform: scale(calc(var(--act) * 4)) rotate(-9deg); opacity: 0; filter: blur(14px) brightness(3); }
+  45% { transform: scale(calc(var(--act) * .88)) rotate(2deg); opacity: 1; filter: blur(0) brightness(1.8); }
+  70% { transform: scale(calc(var(--act) * 1.08)) rotate(-1deg); filter: none; }
+  100% { transform: scale(var(--act)) rotate(0); opacity: 1; }
+}
+@keyframes mg-glitch {
+  0% { opacity: 0; transform: translateX(-30px) scale(var(--act)) skewX(24deg); clip-path: inset(0 100% 0 0); }
+  14% { opacity: 1; transform: translateX(22px) scale(var(--act)) skewX(-20deg); clip-path: inset(30% 0 40% 0); filter: hue-rotate(90deg); }
+  28% { transform: translateX(-14px) scale(var(--act)) skewX(12deg); clip-path: inset(0 30% 55% 0); filter: hue-rotate(-70deg); }
+  42% { transform: translateX(10px) scale(var(--act)) skewX(-8deg); clip-path: inset(55% 0 0 20%); filter: hue-rotate(140deg) brightness(2); }
+  56% { transform: translateX(-6px) scale(var(--act)); clip-path: inset(10% 0 10% 0); filter: none; }
+  72% { transform: translateX(4px) scale(var(--act)); clip-path: inset(0); filter: hue-rotate(40deg); }
+  100% { transform: scale(var(--act)); clip-path: inset(0); filter: none; opacity: 1; }
+}
+@keyframes mg-zoom {
+  0% { transform: scale(calc(var(--act) * .05)) skewX(-30deg); opacity: 0; filter: brightness(4) blur(10px); }
+  55% { transform: scale(calc(var(--act) * 1.35)) skewX(6deg); opacity: 1; filter: brightness(2) blur(0); }
+  78% { transform: scale(calc(var(--act) * .94)) skewX(-3deg); filter: none; }
+  100% { transform: scale(var(--act)) skewX(0); opacity: 1; }
+}
+@keyframes mg-whip {
+  0% { transform: translateX(-130%) scale(var(--act)) skewX(42deg); opacity: 0; filter: blur(10px); }
+  62% { transform: translateX(7%) scale(calc(var(--act) * 1.06)) skewX(-9deg); opacity: 1; filter: blur(0) brightness(1.6); }
+  82% { transform: translateX(-2%) scale(var(--act)) skewX(3deg); filter: none; }
+  100% { transform: scale(var(--act)); opacity: 1; }
+}
+@keyframes mg-title { 0%, 82% { text-shadow: none; } 84% { text-shadow: -3px 0 var(--cb), 3px 0 var(--ca); } 90% { text-shadow: 3px 0 var(--cb), -3px 0 var(--ca); } 94% { text-shadow: none; } }
+
+/* the cover pumps on every beat, edges split into two colours */
+body.gn-montagem #cover {
+  animation: mg-cover var(--pulse) ease-in-out infinite;
+  box-shadow: 0 0 0 3px var(--ca), 0 0 38px var(--ca8), 0 0 90px var(--cb5);
+}
+@keyframes mg-cover {
+  0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(-5px 0 0 var(--cb5)) drop-shadow(5px 0 0 var(--ca5)); }
+  8% { transform: scale(1.075) rotate(-1.2deg); filter: drop-shadow(-9px 0 0 var(--cb8)) drop-shadow(9px 0 0 var(--ca8)) brightness(1.2); }
+  18% { transform: scale(1.02) rotate(.8deg); }
+  35% { transform: scale(1) rotate(0); }
+}
+
+/* the screen: a soft colour flash on each beat, a spinning sunburst, scanlines, and a hit on every new line */
+#scrim::before, #scrim::after { content: none; position: absolute; pointer-events: none; }
+body.gn-montagem #scrim::before {
+  content: ''; inset: -50vmax; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+  background: repeating-conic-gradient(from 0deg, transparent 0 9deg, var(--ca2) 9deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 8%, #000 45%, transparent 70%); mask-image: radial-gradient(circle, transparent 8%, #000 45%, transparent 70%);
+  mix-blend-mode: screen; animation: mg-spin 9s linear infinite;
+}
+body.gn-montagem #scrim::after {
+  content: ''; inset: 0; width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 50%, var(--ca2), transparent 65%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
+  mix-blend-mode: screen; opacity: 0; animation: mg-flash var(--pulse) ease-out infinite;
+}
+@keyframes mg-spin { to { transform: rotate(360deg); } }
+@keyframes mg-flash { 0% { opacity: .75; } 22% { opacity: .1; } 100% { opacity: 0; } }
+body.gn-montagem.mg-hit #lyrics { animation: mg-punch .38s ease-out; }
+body.gn-montagem.mg-hit #scrim { animation: mg-hit .38s ease-out; }
+@keyframes mg-punch { 0% { transform: scale(1.035) translate(-3px, 2px); } 35% { transform: scale(1) translate(3px, -2px); } 70% { transform: translate(-1px, 1px); } 100% { transform: none; } }
+@keyframes mg-hit { 0% { background: linear-gradient(180deg, hsl(var(--h1) 100% 55% / .38), rgba(0,0,0,.72)); } 100% { background: linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,.72) 100%); } }
+
+/* a paused song freezes the whole thing; reduced motion turns the screen effects off */
+body.gn-montagem.paused #cover, body.gn-montagem.paused #scrim::before, body.gn-montagem.paused #scrim::after,
+body.gn-montagem.paused #title, body.gn-montagem.paused #clock { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  body.gn-montagem #cover, body.gn-montagem #scrim::before, body.gn-montagem #scrim::after, body.gn-montagem #title, body.gn-montagem #clock { animation: none !important; }
+}
