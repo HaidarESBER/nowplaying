@@ -1650,7 +1650,13 @@
     }, 5000);
   }
   function chromeShow() { document.body.classList.remove('chrome-off'); armHide(); }
+  let lastPX = -1, lastPY = -1;
   function onActivity(e) {
+    if (e.type === 'pointermove' && e.pointerType === 'mouse') {          // ignore tiny mouse jitter; only a real move counts
+      const moved = lastPX < 0 || Math.abs(e.clientX - lastPX) + Math.abs(e.clientY - lastPY) >= 8;
+      if (!moved) return;
+      lastPX = e.clientX; lastPY = e.clientY;
+    }
     const off = document.body.classList.contains('chrome-off');
     if (off && e.type === 'pointerdown') { swallow = true; setTimeout(() => { swallow = false; }, 450); }   // that tap only reveals
     const now = Date.now();

@@ -22,7 +22,6 @@
 
 <header id="topbar">
   <span id="clock"></span>
-  <div id="ambient" aria-hidden="true"><div id="ambMain"></div><div id="ambSub"></div></div>
   <div id="tools">
   <button id="btnLyrics" class="ib small" aria-label="Show or hide lyrics" hidden>
     <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
@@ -40,6 +39,7 @@
   <!-- Player: cover / meta / lyrics / controls are laid out with CSS grid areas -->
   <section id="player" hidden>
     <div id="coverWrap"><img id="cover" alt="">
+      <div id="ambient" aria-hidden="true"><div id="ambMain"></div><div id="ambSub"></div></div>
       <div id="vol" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
         <div id="volBar"><div id="volFill"></div></div><span id="volNum">0</span>

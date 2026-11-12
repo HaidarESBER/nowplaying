@@ -691,13 +691,23 @@ body.chrome-off #tools { opacity: 0; pointer-events: none; }
 #clock { display: inline-block; transform-origin: left center; will-change: transform; transition: transform .6s cubic-bezier(.22, .8, .3, 1); }
 body.chrome-off #clock { transform: scale(1.9); transition-duration: 1s; }
 
-#ambient {
-  position: absolute; right: 0; top: 50%; margin-top: -24px; pointer-events: none !important; text-align: right; white-space: nowrap;
-  opacity: 0; transform: translateX(80px);
-  transition: opacity .5s ease, transform .7s cubic-bezier(.22, .8, .3, 1);                 /* leaving: back to the right */
+#ambient {                                         /* sits right above the song cover; glides in from the right, back to the right on touch */
+  position: absolute; bottom: calc(100% + 12px); left: 50%; width: max-content; max-width: 92vw; pointer-events: none !important;
+  text-align: center; white-space: nowrap; opacity: 0; transform: translateX(calc(-50% + 48px));
+  transition: opacity .5s ease, transform .7s cubic-bezier(.22, .8, .3, 1);
 }
-body.chrome-off #ambient { opacity: 1; transform: translateX(0); transition: opacity 1s ease .15s, transform 1.1s cubic-bezier(.22, .8, .3, 1) .15s; }   /* arriving: glides in from the right */
-#ambMain { font-size: clamp(17px, 3.6vw, 24px); font-weight: 700; line-height: 1.2; text-shadow: 0 2px 14px rgba(0,0,0,.5); }
-#ambSub { margin-top: 2px; font-size: clamp(12px, 2.4vw, 15px); color: rgba(255,255,255,.72); text-shadow: 0 1px 10px rgba(0,0,0,.45); }
-@media (orientation: landscape) { #ambient { right: calc(100% + 22px); } }              /* landscape: to the left of the clock */
+body.chrome-off #ambient { opacity: 1; transform: translateX(-50%); transition: opacity 1s ease .15s, transform 1.1s cubic-bezier(.22, .8, .3, 1) .15s; }
+#ambMain { font-size: clamp(17px, 3.4vw, 24px); font-weight: 700; line-height: 1.2; text-shadow: 0 2px 14px rgba(0,0,0,.5); }
+#ambSub { margin-top: 2px; font-size: clamp(12px, 2.2vw, 15px); color: rgba(255,255,255,.72); text-shadow: 0 1px 10px rgba(0,0,0,.45); }
+@media (orientation: landscape) {                  /* cover is on the left: line the phrase up with its left edge */
+  #ambient { left: 0; text-align: left; transform: translateX(48px); }
+  body.chrome-off #ambient { transform: translateX(0); }
+}
+@media (orientation: landscape) and (max-height: 560px) {      /* short screens: no room above the cover, so the phrase sits on a soft fade across its top */
+  #ambient { bottom: auto; top: 0; left: 0; right: 0; width: auto; max-width: none; white-space: normal; text-align: left;
+    padding: 9px 10px 26px; border-radius: 24px 24px 0 0; background: linear-gradient(rgba(0,0,0,.74), rgba(0,0,0,0)); }
+  #ambMain { font-size: clamp(13px, 2.1vw, 20px); }
+  #ambSub { font-size: clamp(10px, 1.5vw, 13px); }
+}
+body.chrome-off { cursor: none; }                  /* desktop: the pointer hides too until it moves */
 @media (prefers-reduced-motion: reduce) { #ambient, #clock, #tools { transition-duration: .01s !important; } }
