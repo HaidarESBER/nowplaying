@@ -292,37 +292,59 @@ function drawPipCanvas(cv) {
   ctx.fillText(S.playing ? '▶  playing' : '❚❚  paused', W / 2, by + 40);
 }
 
-async function openVideoPip() {
+// iPhone Safari only starts picture-in-picture from inside the tap itself: any await before the request (playing the video, waiting for it
+// to be ready) uses up the "user gesture" and fails with NotAllowedError. So the video and its canvas are prepared in advance, on the first
+// touch anywhere, and the tap on the button only has to ask for picture-in-picture, synchronously.
+let pipPrep = null;                                                  // { cv, v, timer }
+function preparePipVideo() {
+  if (pipPrep || PIP_DOC || !PIP_VID) return;
   const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540;
   const v = document.createElement('video');
-  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.srcObject = cv.captureStream(12);
+  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.srcObject = cv.captureStream(12);
   v.style.cssText = 'position:fixed;left:0;top:0;width:160px;height:90px;opacity:.01;pointer-events:none;z-index:-1';
   document.body.appendChild(v);
-  drawPipCanvas(cv);
-  await v.play();
-  await new Promise((ok) => { if (v.readyState >= 2) ok(); else { v.addEventListener('loadeddata', ok, { once: true }); setTimeout(ok, 1500); } });
-  if (v.webkitSupportsPresentationMode && !v.requestPictureInPicture && !v.webkitSupportsPresentationMode('picture-in-picture')) { v.remove(); throw new Error('this device does not allow picture-in-picture for this video'); }
-  const timer = setInterval(() => { try { drawPipCanvas(cv); } catch (e) { /* ignore */ } }, 250);
-  const done = () => {
-    clearInterval(timer); try { v.pause(); } catch (e) { /* ignore */ } v.remove(); pip = null; syncPipButton();
+  try { drawPipCanvas(cv); } catch (e) { /* the first frame comes with the timer */ }
+  const p = v.play(); if (p && p.catch) p.catch(() => { pipPrep = null; v.remove(); });             // refused: the next touch tries again
+  const timer = setInterval(() => { if (!pip) return; try { drawPipCanvas(cv); } catch (e) { /* ignore */ } }, 250);   // only draws while a picture-in-picture is open
+  pipPrep = { cv, v, timer };
+  const left = () => {
+    pip = null; syncPipButton();
     if ('mediaSession' in navigator) ['play', 'pause', 'nexttrack', 'previoustrack', 'seekto'].forEach((a) => { try { navigator.mediaSession.setActionHandler(a, null); } catch (e) { /* ignore */ } });
   };
-  v.addEventListener('leavepictureinpicture', done);
-  v.addEventListener('webkitpresentationmodechanged', () => { if (v.webkitPresentationMode !== 'picture-in-picture') done(); });
-  try {
-    if (v.requestPictureInPicture) await v.requestPictureInPicture();
-    else v.webkitSetPresentationMode('picture-in-picture');
-  } catch (e) { done(); throw e; }
-  pip = { mode: 'video', video: v };
-  syncPipButton();
-  if ('mediaSession' in navigator) {                                // the system's PiP buttons drive the real player
-    const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) { /* unsupported */ } };
-    const meta = () => { const t = S.track; if (t) ms.metadata = new MediaMetadata({ title: t.title, artist: t.artist || '', album: t.album || '', artwork: t.art ? [{ src: t.art, sizes: '640x640' }] : [] }); };
-    meta(); setInterval(() => { if (pip) meta(); }, 3000);
-    set('play', () => { if (!S.playing) el.play.click(); }); set('pause', () => { if (S.playing) el.play.click(); });
-    set('nexttrack', () => el.next.click()); set('previoustrack', () => el.prev.click());
-    set('seekto', (d) => { if (d && d.seekTime != null) seekTo(d.seekTime * 1000); });
-  }
+  v.addEventListener('enterpictureinpicture', () => { pip = { mode: 'video', video: v }; syncPipButton(); pipMediaSession(); });
+  v.addEventListener('leavepictureinpicture', left);
+  v.addEventListener('webkitpresentationmodechanged', () => {
+    if (v.webkitPresentationMode === 'picture-in-picture') { pip = { mode: 'video', video: v }; syncPipButton(); pipMediaSession(); }
+    else if (pip) left();
+  });
+}
+function pipMediaSession() {                                         // the system's PiP buttons drive the real player
+  if (!('mediaSession' in navigator)) return;
+  const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) { /* unsupported */ } };
+  const meta = () => { const t = S.track; if (t) ms.metadata = new MediaMetadata({ title: t.title, artist: t.artist || '', album: t.album || '', artwork: t.art ? [{ src: t.art, sizes: '640x640' }] : [] }); };
+  meta(); clearInterval(pipMediaSession.t); pipMediaSession.t = setInterval(() => { if (pip) meta(); else clearInterval(pipMediaSession.t); }, 3000);
+  set('play', () => { if (!S.playing) el.play.click(); }); set('pause', () => { if (S.playing) el.play.click(); });
+  set('nexttrack', () => el.next.click()); set('previoustrack', () => el.prev.click());
+  set('seekto', (d) => { if (d && d.seekTime != null) seekTo(d.seekTime * 1000); });
+}
+if (!PIP_DOC && PIP_VID) ['pointerdown', 'touchend'].forEach((ev) => document.addEventListener(ev, preparePipVideo, { passive: true }));
+
+// called straight from the tap: nothing asynchronous before the request
+function enterVideoPip() {
+  if (!pipPrep) { preparePipVideo(); toast('Getting picture-in-picture ready: tap the button once more'); return; }
+  const v = pipPrep.v;
+  if (v.paused || v.readyState < 2) { try { v.play(); } catch (e) { /* ignore */ } toast('Getting picture-in-picture ready: tap the button once more'); return; }
+  try { drawPipCanvas(pipPrep.cv); } catch (e) { /* ignore */ }
+  if (v.requestPictureInPicture) {
+    v.requestPictureInPicture().catch((e) => pipFailed(e));
+  } else if (v.webkitSupportsPresentationMode && v.webkitSupportsPresentationMode('picture-in-picture')) {
+    try { v.webkitSetPresentationMode('picture-in-picture'); } catch (e) { pipFailed(e); }
+  } else pipFailed(new Error('this device does not allow picture-in-picture for this video'));
+}
+function pipFailed(e) {
+  const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  console.warn('picture-in-picture failed', e);
+  toast('Picture-in-picture failed: ' + String((e && (e.name + ' - ' + e.message)) || e).slice(0, 110) + (standalone ? ' (try the site in Safari, not the home-screen app)' : ''));
 }
 
 // ------------------------------------------------------------------ the button and the key
@@ -330,22 +352,16 @@ function syncPipButton() {
   const b = $('btnPip');
   if (b) { b.classList.toggle('on', !!pip); b.setAttribute('aria-pressed', String(!!pip)); }
 }
-async function togglePip() {
+function togglePip() {
   if (pip) {
     if (pip.mode === 'doc') { try { pip.win.close(); } catch (e) { /* ignore */ } }
-    else if (document.exitPictureInPicture && document.pictureInPictureElement) { try { await document.exitPictureInPicture(); } catch (e) { /* ignore */ } }
+    else if (document.exitPictureInPicture && document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
     else if (pip.video && pip.video.webkitSetPresentationMode) pip.video.webkitSetPresentationMode('inline');
     return;
   }
   if (S.screen !== 'player' || !S.track) { toast('Start a song first'); return; }
-  try {
-    if (PIP_DOC) await openDocPip(); else await openVideoPip();
-  } catch (e) {
-    if (PIP_DOC) { try { await openVideoPip(); return; } catch (e2) { /* fall through */ } }
-    const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-    console.warn('picture-in-picture failed', e);
-    toast('Picture-in-picture failed: ' + String((e && (e.name + ' - ' + e.message)) || e).slice(0, 110) + (standalone ? ' (try the site in Safari, not the home-screen app)' : ''));
-  }
+  if (PIP_DOC) openDocPip().catch(pipFailed);
+  else enterVideoPip();                                            // synchronous on purpose
 }
 if (!PIP_DOC && !PIP_VID) { const b = $('btnPip'); if (b) b.hidden = true; }
 else { const b = $('btnPip'); if (b) b.addEventListener('click', togglePip); }
