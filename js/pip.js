@@ -296,10 +296,12 @@ async function openVideoPip() {
   const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540;
   const v = document.createElement('video');
   v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.srcObject = cv.captureStream(12);
-  v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.02;pointer-events:none;z-index:-1';
+  v.style.cssText = 'position:fixed;left:0;top:0;width:160px;height:90px;opacity:.01;pointer-events:none;z-index:-1';
   document.body.appendChild(v);
   drawPipCanvas(cv);
   await v.play();
+  await new Promise((ok) => { if (v.readyState >= 2) ok(); else { v.addEventListener('loadeddata', ok, { once: true }); setTimeout(ok, 1500); } });
+  if (v.webkitSupportsPresentationMode && !v.requestPictureInPicture && !v.webkitSupportsPresentationMode('picture-in-picture')) { v.remove(); throw new Error('this device does not allow picture-in-picture for this video'); }
   const timer = setInterval(() => { try { drawPipCanvas(cv); } catch (e) { /* ignore */ } }, 250);
   const done = () => {
     clearInterval(timer); try { v.pause(); } catch (e) { /* ignore */ } v.remove(); pip = null; syncPipButton();
@@ -340,7 +342,9 @@ async function togglePip() {
     if (PIP_DOC) await openDocPip(); else await openVideoPip();
   } catch (e) {
     if (PIP_DOC) { try { await openVideoPip(); return; } catch (e2) { /* fall through */ } }
-    toast('This browser could not open picture-in-picture');
+    const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    console.warn('picture-in-picture failed', e);
+    toast('Picture-in-picture failed: ' + String((e && (e.name + ' - ' + e.message)) || e).slice(0, 110) + (standalone ? ' (try the site in Safari, not the home-screen app)' : ''));
   }
 }
 if (!PIP_DOC && !PIP_VID) { const b = $('btnPip'); if (b) b.hidden = true; }
