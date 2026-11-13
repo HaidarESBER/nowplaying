@@ -62,6 +62,7 @@ body { position: fixed; inset: 0; }
 #topbar .ib.small { width: 42px; height: 42px; }
 #topbar .ib.small svg { width: 24px; height: 24px; }
 #btnLyrics { opacity: .9; }
+#btnPip.on svg { fill: #1ed760; }
 body:not(.lyrics) #btnLyrics { opacity: .35; }
 
 body.noclock #clock { display: none; }

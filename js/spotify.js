@@ -84,7 +84,7 @@ function logout() {
 // ------------------------------------------------------------------ polling
 async function poll() {
   clearTimeout(S.pollT);
-  if (document.hidden || !S.token) return;
+  if ((document.hidden && !(typeof pipActive === 'function' && pipActive())) || !S.token) return;   // a picture-in-picture window keeps polling
   let next = 4000;
   try {
     const r = await api('GET', '/me/player?additional_types=episode');

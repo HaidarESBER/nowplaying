@@ -50,6 +50,7 @@ Big cover art, live scrolling lyrics, transport controls. It stays awake, and it
   - **Katana**: a bright blade sweeps across, the line is cut along a random diagonal and the halves snap back together with a flash. **X-cut**: two blades, four pieces.
   - **Shatter** (jagged shards assemble), **Tear** (the line rips apart along a jagged edge and slams shut), **Blinds** (strips slide in from alternating sides), **Zipper** (columns drop in), **Glitch bands**, **Split doors**.
   - **Word effects**: chop, wave, swing, pop, one word after another.
+  - **Picture in picture** (button in the top bar, or press **I**): a small always-on-top player with the cover (glowing while it plays), title, the current lyric line in the song's genre look, a seekable progress bar and previous / play / next / like buttons. It reshapes itself as you resize it (lyrics, then the bar, then only the cover and buttons). On Chrome, Edge and Opera on a computer it is a real window of our own; on Safari, iPhone, Firefox and Android the same picture is drawn on a canvas and shown as a picture-in-picture video, with the system's media buttons driving the player.
   - **Auto-size for short lines** (Settings, on by default): in the *One line* and *Word by word* styles, a line of one or two words ("Hey!", "Oh yeah") is drawn much larger than the others, for effect.
   - **Cover moves in every look, never in the background**: each genre moves the cover its own way (hip-hop bounces with a comic offset shadow, rock shakes like an amp, electronic glitches in slices, classical drifts in a gold double frame, chill floats, soul breathes, country tilts like a polaroid, Arabic turns an eight-pointed star behind it, Latin sways, pop bounces with a colour-cycling glow).
   - **Montagem look** (montagem, phonk, funk carioca): over the top and locked to a ~130 BPM beat. The playing line slams, glitches, zooms or whips in and keeps punching on every beat; the cover pumps with colour-split edges; a sunburst spins behind; the whole screen gets a zoom punch and a soft colour flash on every new line (kept under 3 flashes a second and never full white). Song titles containing "montagem" or "phonk" trigger it by themselves. Off with reduced motion; a paused song freezes it.
@@ -144,6 +145,7 @@ Plain HTML, CSS and JS, no build step. The JavaScript is split into small classi
 | `js/genre.js` | genre rules, online lookup, applying the look |
 | `js/library.js` | playlists and devices sheet, greeting and name |
 | `js/search.js` | search sheet: Spotify search, results, play |
+| `js/pip.js` | picture-in-picture mini player (window and canvas versions) |
 | `js/shortcuts.js` | desktop keyboard shortcuts |
 | `js/settings.js` | auto-hiding buttons, settings panel |
 | `js/boot.js` | demo mode and start-up |
